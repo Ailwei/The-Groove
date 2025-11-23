@@ -39,6 +39,8 @@ export function HomeScreen({
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [userFocused, setUserFocused] = useState(false);
+const [isMapReady, setIsMapReady] = useState(false);
+
 
 
    useEffect(() => {
@@ -93,20 +95,6 @@ const getSortedGrooves = () => {
     }
   };
 const sortedGrooves = getSortedGrooves();
-
-useEffect(() => {
-  if (mapRef.current && sortedGrooves.length > 0 && userFocused) {
-    const coords = sortedGrooves.map(tag => ({
-      latitude: tag.coordinates.lat,
-      longitude: tag.coordinates.lng,
-    }));
-
-    mapRef.current.fitToCoordinates(coords, {
-      edgePadding: { top: 80, right: 80, bottom: 80, left: 80 },
-      animated: true,
-    });
-  }
-}, [sortedGrooves, userFocused]);
 
   useEffect(() => {
     if (!hasShownNotification) {
@@ -197,43 +185,43 @@ const ProfileAnchor = (
             <Text style={styles.legendText}>Quiet</Text>
           </View>
         </View>
- <MapView
-  ref={mapRef}
-  style={styles.mapArea}
-  showsUserLocation={true}
-  showsMyLocationButton={true}
-  initialRegion={
-    userLocation
-      ? {
-          latitude: userLocation.lat,
-          longitude: userLocation.lng,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        }
-      : undefined
-  }
-  onMapReady={() => setUserFocused(true)}
->
-
-  {sortedGrooves.map(tag => (
-    <Marker
-      key={tag.id}
-      coordinate={{
-        latitude: tag.coordinates.lat,
-        longitude: tag.coordinates.lng,
+ {userLocation && (
+  <>
+    <MapView
+      ref={mapRef}
+      style={styles.mapArea}
+      showsUserLocation={true}
+      showsMyLocationButton={true}
+      initialRegion={{
+        latitude: userLocation.lat,
+        longitude: userLocation.lng,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
       }}
-      title={tag.location || 'Groove'}
-      description={tag.message}
-      pinColor={getVibeColor(tag.vibe)}
-      onPress={() => onSelectGroove(tag)}
-    />
-  ))}
-</MapView>
-{isLocationLoading && (
-  <View style={styles.loadingOverlay}>
-    <Text>Fetching your current location…</Text>
+      onMapReady={() => setIsMapReady(true)}
+    >
+
+    {sortedGrooves.map(tag => (
+      <Marker
+        key={tag.id}
+        coordinate={{
+          latitude: tag.coordinates.lat,
+          longitude: tag.coordinates.lng,
+        }}
+        title={tag.location || 'Groove'}
+        description={tag.message}
+        pinColor={getVibeColor(tag.vibe)}
+        onPress={() => onSelectGroove(tag)}
+      />
+    ))}
+  </MapView>
+
+  {(!isMapReady || isLocationLoading) && (
+  <View style={styles.mapLoadingOverlay}>
+    <Text style={styles.loadingText}>Loading map…</Text>
   </View>
 )}
+
 
         <TouchableOpacity  style={[
         styles.tagButton,
@@ -247,6 +235,8 @@ const ProfileAnchor = (
         )}
 
         <Toast />
+  </>
+)}
       </SafeAreaView>
     </Provider>
   );
@@ -312,6 +302,24 @@ const styles = StyleSheet.create({
     elevation: 5,
     zIndex: 20,
   },
+  mapLoadingOverlay: {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  right: 0,
+  bottom: 0,
+  justifyContent: "center",
+  alignItems: "center",
+  backgroundColor: "rgba(255,255,255,0.9)",
+  zIndex: 200,
+},
+
+loadingText: {
+  fontSize: 16,
+  fontWeight: "600",
+  color: "#555",
+},
+
 
   legendItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
 

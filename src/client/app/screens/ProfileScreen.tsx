@@ -3,42 +3,54 @@ import { ArrowLeft, MapPin, Settings } from 'lucide-react-native';
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GrooveTag } from '..';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import axios from 'axios';
-import {jwtDecode} from 'jwt-decode';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 interface ProfileScreenProps {
   grooveTags: GrooveTag[];
   onBack: () => void;
   onNavigateToSettings: () => void;
 }
-interface JwtPayload {
+
+interface ProfileData {
   username: string;
-  userId: string;
-  iat: number;
-  exp: number;
+  memberSince: string;
+  email: string;
+  totalTags: number;
+  thisWeek: number;
+  hotSpots: number;
 }
 
 export function ProfileScreen({ grooveTags, onBack, onNavigateToSettings }: ProfileScreenProps) {
-  const [username, setUsername] = React.useState('');
+  const [profile, setProfile] = React.useState<ProfileData | null>(null);
   const userTags = grooveTags.slice(0, 2);
 
+  React.useEffect(() => {
+    const fetchProfile = async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
 
-    React.useEffect(() => {
-    const getUsernameFromToken = async () => {
       try {
-        const token = await AsyncStorage.getItem('token'); // or SecureStore if using Expo
-        if (!token) return;
-
-        const decoded = jwtDecode<JwtPayload>(token);
-        setUsername(decoded.username);
-      } catch (error) {
-        console.log('Error decoding token', error);
+        const res = await axios.get("http://192.168.18.29:3000/api/user/profile", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = res.data;
+        setProfile({
+          username: data.username,
+          memberSince: new Date(data.memberSince).toLocaleDateString(),
+          email: data.email,
+          totalTags: data.totalTags,
+          thisWeek: data.thisWeek,
+          hotSpots: data.hotSpots,
+        });
+      } catch (err) {
+        console.log("Failed to fetch profile:", err);
       }
     };
 
-    getUsernameFromToken();
+    fetchProfile();
   }, []);
+
   const getVibeColor = (vibe: GrooveTag['vibe']) => {
     switch (vibe) {
       case 'very-busy': return '#ef4444';
@@ -85,30 +97,33 @@ export function ProfileScreen({ grooveTags, onBack, onNavigateToSettings }: Prof
 
       <View style={styles.profileInfo}>
         <View style={styles.avatar}>
-          <Text style={styles.avatarText}>{username ? username.slice(0, 2).toUpperCase() : '--'}</Text>
+          <Text style={styles.avatarText}>{profile?.username?.slice(0, 2).toUpperCase() || '--'}</Text>
         </View>
         <View>
-          <Text style={styles.username}>{username || 'Loading...'}</Text>
-          <Text style={styles.memberSince}>Member since Nov 2025</Text>
+          <Text style={styles.username}>{profile?.username || 'Loading...'}</Text>
+          <Text style={styles.memberSince}>
+            Member since {profile?.memberSince || "Loading..."}
+          </Text>
         </View>
       </View>
+
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Total Tags</Text>
-          <Text>12</Text>
+          <Text>{profile?.totalTags ?? '...'}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>This Week</Text>
-          <Text>5</Text>
+          <Text>{profile?.thisWeek ?? '...'}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statLabel}>Hot Spots</Text>
-          <Text>3</Text>
+          <Text>{profile?.hotSpots ?? '...'}</Text>
         </View>
       </View>
+
       <ScrollView style={styles.tagsContainer}>
         <Text style={styles.sectionTitle}>Your Recent Grooves</Text>
-
         {userTags.length === 0 ? (
           <View style={styles.emptyContainer}>
             <MapPin width={48} height={48} color="#999" />
@@ -126,9 +141,7 @@ export function ProfileScreen({ grooveTags, onBack, onNavigateToSettings }: Prof
                 <Text style={styles.tagTime}>{getTimeAgo(tag.taggedAt)}</Text>
               </View>
               <Text style={styles.tagLocation}>{tag.location}</Text>
-              {tag.message && (
-                <Text style={styles.tagMessage}>"{tag.message}"</Text>
-              )}
+              {tag.message && <Text style={styles.tagMessage}>"{tag.message}"</Text>}
             </View>
           ))
         )}
@@ -162,4 +175,5 @@ const styles = StyleSheet.create({
   tagLocation: { color: '#6b7280', marginBottom: 4 },
   tagMessage: { fontStyle: 'italic', color: '#4b5563', backgroundColor: '#e5e7eb', padding: 4, borderRadius: 4 },
 });
-export default ProfileScreen
+
+export default ProfileScreen;

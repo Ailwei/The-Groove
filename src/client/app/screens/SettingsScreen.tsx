@@ -4,6 +4,9 @@ import { ArrowLeft, MapPin, Bell, Trash2 } from 'lucide-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
+import * as Location from "expo-location";
+
 interface SettingsScreenProps {
   onBack: () => void;
   onLogout: () => void;
@@ -13,6 +16,8 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
   const [locationAccuracy, setLocationAccuracy] = useState(true);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [notificationFrequency, setNotificationFrequency] = useState<'all' | 'important' | 'off'>('all');
+  const [location, setLocation] = useState('Fetching location...');
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
 
   const handleDeleteAccount = async () => {
     try {
@@ -63,6 +68,41 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
     }
   };
   useEffect(() => {
+      (async () => {
+        try {
+          const { status } = await Location.requestForegroundPermissionsAsync();
+          if (status !== 'granted') {
+            Toast.show({ type: 'error', text1: 'Location permission denied' });
+            setLocation('Unknown Location');
+            return;
+          }
+  
+          const pos = await Location.getCurrentPositionAsync({});
+          const currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+          setCoords(currentCoords);
+  
+          const res = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+            params: { lat: currentCoords.lat, lon: currentCoords.lng, format: "json" },
+            headers: { "User-Agent": "TheGrooveApp/1.0" }
+          });
+  
+          const address = res.data.address;
+          let locationName = "Unknown Location";
+          if (address) {
+            locationName = address.road
+              ? `${address.road}, ${address.suburb || address.city || ""}`.trim()
+              : address.suburb || address.city || "Unknown Location";
+          }
+  
+          setLocation(locationName);
+        } catch (err) {
+          console.error("Failed to fetch location:", err);
+          setLocation("Unknown Location");
+        }
+      })();
+    }, []);
+  
+  useEffect(() => {
     const loadAccuracy = async () => {
       const saved = await AsyncStorage.getItem('highAccuracy');
       if (saved !== null) setLocationAccuracy(saved === 'true');
@@ -94,7 +134,7 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MapPin width={16} height={16} color="#6b7280" />
-            <Text style={styles.sectionTitle}>Location</Text>
+            <Text style={styles.sectionTitle}>  {location}</Text>
           </View>
           <View style={styles.row}>
             <View>

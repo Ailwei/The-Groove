@@ -8,6 +8,7 @@ import { Provider, Menu as PaperMenu } from 'react-native-paper';
 import { SafeAreaView ,  useSafeAreaInsets} from 'react-native-safe-area-context';
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
+import React from 'react';
 
 interface HomeScreenProps {
   grooveTags: GrooveTag[];
@@ -188,22 +189,21 @@ const ProfileAnchor = (
  {userLocation && (
   <>
     <MapView
-      ref={mapRef}
-      style={styles.mapArea}
-      showsUserLocation={true}
-      showsMyLocationButton={true}
-      initialRegion={{
-        latitude: userLocation.lat,
-        longitude: userLocation.lng,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      }}
-      onMapReady={() => setIsMapReady(true)}
-    >
-
-    {sortedGrooves.map(tag => (
+  ref={mapRef}
+  style={styles.mapArea}
+  showsUserLocation={true}
+  showsMyLocationButton={true}
+  initialRegion={{
+    latitude: userLocation.lat,
+    longitude: userLocation.lng,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+  }}
+  onMapReady={() => setIsMapReady(true)}
+>
+  {sortedGrooves.map(tag => (
+    <React.Fragment key={tag.id}>
       <Marker
-        key={tag.id}
         coordinate={{
           latitude: tag.coordinates.lat,
           longitude: tag.coordinates.lng,
@@ -213,8 +213,35 @@ const ProfileAnchor = (
         pinColor={getVibeColor(tag.vibe)}
         onPress={() => onSelectGroove(tag)}
       />
-    ))}
-  </MapView>
+
+      <Marker
+        coordinate={{
+          latitude: tag.coordinates.lat + 0.00015,
+          longitude: tag.coordinates.lng,
+        }}
+        anchor={{ x: 0.5, y: 1 }}
+        tracksViewChanges={true}
+        zIndex={10}
+      >
+        <View style={{
+          backgroundColor: 'rgba(0,0,0,0.8)',
+          paddingHorizontal: 8,
+          paddingVertical: 4,
+          borderRadius: 12,
+          minWidth: 28,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
+          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
+            +{tag.supportCount || 0}
+          </Text>
+        </View>
+      </Marker>
+    </React.Fragment>
+  ))}
+</MapView>
+
+  
 
   {(!isMapReady || isLocationLoading) && (
   <View style={styles.mapLoadingOverlay}>

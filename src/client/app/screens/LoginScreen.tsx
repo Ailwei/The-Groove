@@ -18,6 +18,7 @@ import {jwtDecode} from 'jwt-decode';
 interface LoginScreenProps {
   onLoginSuccess: (userId: string) => void;
   onNavigateToSignup: () => void;
+  onNavigateToForgot: () => void;
 }
 
 interface TokenPayload {
@@ -27,7 +28,7 @@ interface TokenPayload {
   exp: number;
 }
 
-export function LoginScreen({ onLoginSuccess, onNavigateToSignup }: LoginScreenProps) {
+export function LoginScreen({ onLoginSuccess, onNavigateToSignup , onNavigateToForgot}: LoginScreenProps) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -103,6 +104,11 @@ export function LoginScreen({ onLoginSuccess, onNavigateToSignup }: LoginScreenP
         <TouchableOpacity onPress={onNavigateToSignup} style={{ marginTop: 16 }}>
           <Text style={styles.linkText}>Don't have an account? Sign up</Text>
         </TouchableOpacity>
+       <TouchableOpacity onPress={onNavigateToForgot} style={{ marginTop: 16 }}>
+  <Text style={styles.linkText}>Forgot password?</Text>
+</TouchableOpacity>
+
+
 
         <Toast />
       </ScrollView>

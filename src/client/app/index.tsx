@@ -10,9 +10,11 @@ import { SplashScreen } from './screens/SplashScreen';
 import { TagGrooveScreen } from './screens/TagGrooveScreen';
 import { SignupScreen } from './screens/SignUp';
 import { LoginScreen } from './screens/LoginScreen';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
+import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import axios from 'axios';
 
-export type Screen = 'splash' | 'signup' | 'login' | 'onboarding' | 'home' | 'tag' | 'profile' | 'settings';
+export type Screen = 'splash' | 'signup' | 'login' | 'onboarding' | 'home' | 'tag' | 'profile' | 'settings' | 'forgotpassword' | 'resetpassword';
 
 export interface GrooveTag {
   id: string;
@@ -23,6 +25,7 @@ export interface GrooveTag {
   location: string;
   startTime: Date;
   endTime: Date;
+  supportCount?: number;
 }
 
 export default function App() {
@@ -32,6 +35,8 @@ export default function App() {
   const [selectedGroove, setSelectedGroove] = useState<GrooveTag | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+  const [support, setSupport] = useState ([])
+const [resetEmail, setResetEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const initApp = async () => {
@@ -63,7 +68,9 @@ export default function App() {
           location: g.location || 'Unknown',
           startTime: new Date(g.startAt._seconds * 1000),
           endTime: new Date(g.expiresAt._seconds * 1000),
+          supportCount: g.supporters?.length || 0,
         }));
+        console.log("data", res.data.support)
         setGrooveTags(formattedGrooves);
       } catch (err) {
         console.error('Error fetching grooves:', err);
@@ -125,10 +132,29 @@ export default function App() {
       )}
       {currentScreen === 'login' && (
         <LoginScreen
+        onNavigateToForgot={() => setCurrentScreen('forgotpassword')}
           onLoginSuccess={handleLoginSuccess}
           onNavigateToSignup={() => setCurrentScreen('signup')}
         />
       )}
+   {currentScreen === 'forgotpassword' && (
+  <ForgotPasswordScreen
+    onNavigateToReset={(email) => {
+      setResetEmail(email);
+      setCurrentScreen('resetpassword');
+    }}
+    onBackToLogin={() => setCurrentScreen('login')}
+  />
+)}
+
+  {currentScreen === 'resetpassword' && resetEmail && (
+  <ResetPasswordScreen
+    email={resetEmail}
+    onBackToLogin={() => setCurrentScreen('login')}
+  />
+)}
+
+
       {currentScreen === 'onboarding' && <OnboardingScreens onComplete={handleOnboardingComplete} />}
       {currentScreen === 'home' && (
         <HomeScreen

@@ -28,7 +28,7 @@ export const loginController = async (req: Request, res: Response) => {
     }
 
     const token = jwt.sign(
-      { userId: userDoc.id, email: userData.email },
+      { userId: userDoc.id, email: userData.email ,  username: userData.username, },
       JWT_SECRET,
       { expiresIn: "7d" }
     );

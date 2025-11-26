@@ -1,19 +1,50 @@
-import  {Response, Request } from "express";
-import admin from 'firebase-admin';
+import { Response } from "express";
+import admin from "firebase-admin";
 import { db } from "../firebase/firestore";
 import { getDistanceFromLatLonInM } from "../utils/geo";
 import { sendNearbyNotifications } from "../utils/sendNotifications";
 import axios from "axios";
 import { AuthRequest } from "../middleWare/middleWare";
-const RADIUS_METERS = 50;
+
+const RADIUS_METERS = 20;
+
+async function addSupporter(
+  grooveRef: FirebaseFirestore.DocumentReference,
+  userId: string,
+  username: string
+) {
+  const doc = await grooveRef.get();
+  if (!doc.exists) return null;
+
+  const grooveData = doc.data();
+  if (!grooveData) return null;
+
+  console.log("owner:", grooveData.userId);
+  console.log("support requester:", userId);
+
+  if (grooveData.userId === userId) {
+    console.log("Owner cannot support their own groove");
+    return null;
+  }
+
+  await grooveRef.update({
+    supporters: admin.firestore.FieldValue.arrayUnion({ userId, username }),
+  });
+
+  const updatedDoc = await grooveRef.get();
+  return updatedDoc.data()?.supporters?.length || 0;
+}
+
 
 export const tagGrooveController = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.userId;
-  
-    if (!userId) {
-      return res.status(401).json({ error: "Unauthorized: User not found" });
-    }
-  const {username, lat, lng, vibe, message, startTime, endTime } = req.body;
+  const username = req.user?.username;
+
+  if (!userId || !username) {
+    return res.status(401).json({ error: "Unauthorized: User not found" });
+  }
+
+  const { lat, lng, vibe, message, startTime, endTime } = req.body;
 
   if (!lat || !lng || !vibe || !startTime || !endTime) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -24,8 +55,8 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
     const expiresAtTimestamp = admin.firestore.Timestamp.fromDate(new Date(endTime));
 
     const snapshot = await db.collection("grooves").get();
-
     let existingGroove: any = null;
+
     snapshot.forEach(doc => {
       const data = doc.data();
       const distance = getDistanceFromLatLonInM(
@@ -43,48 +74,32 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
       try {
         const res = await axios.get(
           "https://nominatim.openstreetmap.org/reverse",
-          {
-            params: { lat, lon: lng, format: "json" },
-            headers: { "User-Agent": "TheGrooveApp/1.0" },
-          }
+          { params: { lat, lon: lng, format: "json" }, headers: { "User-Agent": "TheGrooveApp/1.0" } }
         );
-
         const address = res.data.address;
         if (!address) return "Unknown";
-
         return address.road
           ? `${address.road}, ${address.suburb || address.city || ""}`.trim()
           : address.suburb || address.city || "Unknown";
-      } catch (err) {
-        console.error("Reverse geocode failed:", err);
+      } catch {
         return "Unknown";
       }
     };
 
-    if (existingGroove) {
-      const supporters = existingGroove.supporters || [];
+  if (existingGroove) {
+  const grooveRef = db.collection("grooves").doc(existingGroove.id);
 
-      if (!supporters.some((s: any) => s.userId === userId)) {
-        supporters.push({ userId, username });
-      }
+  const totalSupports = await addSupporter(grooveRef, userId, username);
 
-      await db.collection("grooves").doc(existingGroove.id).update({
-        supporters,
-        vibe,
-        message: message || existingGroove.message,
-        updatedAt: admin.firestore.Timestamp.now(),
-        startAt: startAtTimestamp,
-        expiresAt: expiresAtTimestamp,
-      });
+  return res.status(200).json({
+    message: "Groove already exists at this location — support added",
+    grooveId: existingGroove.id,
+    totalSupports,
+    existingGroove,
+    requiresConfirmation: false,
+  });
+}
 
-
-
-      return res.status(200).json({
-        message: "Groove updated successfully",
-        grooveId: existingGroove.id,
-        totalSupports: supporters.length,
-      });
-    }
     const locationName = await resolveLocationName(lat, lng);
     const newGroove = {
       userId,
@@ -99,44 +114,37 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
     };
 
     const docRef = await db.collection("grooves").add(newGroove);
-
     sendNearbyNotifications(newGroove);
 
     return res.status(201).json({
       message: "Groove tagged successfully",
       grooveId: docRef.id,
+      totalSupports: 1,
     });
-
   } catch (error: any) {
-    console.error("tagGrooveController caught error:", error);
+    console.error("tagGrooveController error:", error);
     return res.status(500).json({ error: error.message });
   }
 };
 
-export const getGroovesController = async (req: Request, res: Response) => {
+export const getGroovesController = async (_req: any, res: Response) => {
   try {
     const now = admin.firestore.Timestamp.now();
-    const snapshot = await db
-      .collection("grooves")
-      .where("expiresAt", ">", now)
-      .get();
+    const snapshot = await db.collection("grooves").where("expiresAt", ">", now).get();
 
     const grooves: any[] = [];
-    snapshot.forEach(doc => {
-      console.log(doc.id, doc.data());
-      grooves.push({ id: doc.id, ...doc.data() });
-    });
-
+    snapshot.forEach(doc => grooves.push({ id: doc.id, ...doc.data() }));
 
     return res.status(200).json({ grooves });
-
   } catch (error: any) {
     return res.status(500).json({ error: error.message });
   }
 };
 
-export const supportGrooveController = async (req: Request, res: Response) => {
-  const { grooveId, userId, username } = req.body;
+export const supportGrooveController = async (req: AuthRequest, res: Response) => {
+  const { grooveId } = req.body;
+  const userId = req.user?.userId;
+  const username = req.user?.username;
 
   if (!grooveId || !userId || !username) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -146,26 +154,20 @@ export const supportGrooveController = async (req: Request, res: Response) => {
     const grooveRef = db.collection("grooves").doc(grooveId);
     const grooveDoc = await grooveRef.get();
 
-    if (!grooveDoc.exists) {
-      return res.status(404).json({ error: "Groove not found" });
+    if (!grooveDoc.exists) return res.status(404).json({ error: "Groove not found" });
+
+    const grooveData = grooveDoc.data();
+    if (!grooveData) return res.status(500).json({ error: "Invalid groove data" });
+
+    if (grooveData.userId === userId) {
+      return res.status(400).json({ error: "You cannot support your own groove" });
     }
 
-    const supporters = grooveDoc.data()?.supporters || [];
-
-    if (supporters.some((s: { userId: any }) => s.userId === userId)) {
-      return res
-        .status(400)
-        .json({ error: "User already supported this groove" });
-    }
-
-    supporters.push({ userId, username });
-
-    await grooveRef.update({ supporters });
+    const totalSupports = await addSupporter(grooveRef, userId, username);
 
     return res.status(200).json({
       message: "Groove supported successfully",
-      totalSupports: supporters.length,
-      supportedBy: supporters.map((s: { username: any }) => s.username),
+      totalSupports,
     });
   } catch (error: any) {
     return res.status(500).json({ error: error.message });

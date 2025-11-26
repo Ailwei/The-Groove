@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { db } from "../firebase/firestore";
 import crypto from "crypto";
+import { sendPasswordResetOtp } from "../utils/sendEmail";
 
 export const requestPasswordResetController = async (req: Request, res: Response) => {
   const { email } = req.body;
@@ -27,10 +28,13 @@ export const requestPasswordResetController = async (req: Request, res: Response
       expiresAt,
     });
 
+    await sendPasswordResetOtp(email);
+
     console.log(`Password reset token for ${email}: ${token}`);
 
-    return res.status(200).json({ message: "Password reset requested. Check your email." });
+    return res.status(200).json({ message: "Password reset requested. Check your email for OTP." });
   } catch (err: any) {
+    console.error(err);
     return res.status(500).json({ error: err.message });
   }
 };

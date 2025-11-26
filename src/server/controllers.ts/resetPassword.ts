@@ -1,39 +1,29 @@
-import { Request, Response } from "express";
+import { Response, Request } from "express";
 import { db } from "../firebase/firestore";
+import bcrypt from "bcrypt";
 
+export const resetPasswordWithOtp = async (req: Request, res: Response) => {
+  const { email, otp, newPassword } = req.body;
+  if (!email || !otp || !newPassword) return res.status(400).json({ error: "All fields required" });
 
-export const resetPasswordController = async (req: Request, res: Response) => {
-  const { token, newPassword } = req.body;
+  const userSnapshot = await db.collection("users").where("email", "==", email).get();
+  if (userSnapshot.empty) return res.status(404).json({ error: "User not found" });
+  const userDoc = userSnapshot.docs[0];
 
-  if (!token || !newPassword) {
-    return res.status(400).json({ error: "Missing required fields: token, newPassword" });
-  }
+  const otpSnapshot = await db.collection("passwordResetOTPs")
+    .where("userId", "==", userDoc.id)
+    .where("otp", "==", otp)
+    .get();
 
-  try {
-    const tokenSnapshot = await db
-      .collection("passwordResetRequests")
-      .where("token", "==", token)
-      .get();
+  if (otpSnapshot.empty) return res.status(400).json({ error: "Invalid OTP" });
 
-    if (tokenSnapshot.empty) {
-      return res.status(400).json({ error: "Invalid or expired token" });
-    }
+  const otpDoc = otpSnapshot.docs[0];
+  if (Date.now() > otpDoc.data().expiresAt) return res.status(400).json({ error: "OTP expired" });
 
-    const resetDoc = tokenSnapshot.docs[0];
-    const data = resetDoc.data();
+  const hashedPassword = await bcrypt.hash(newPassword, 10);
+  await db.collection("users").doc(userDoc.id).update({ password: hashedPassword });
 
-    if (Date.now() > data.expiresAt) {
-      return res.status(400).json({ error: "Token expired" });
-    }
+  await db.collection("passwordResetOTPs").doc(otpDoc.id).delete();
 
-    await db.collection("users").doc(data.userId).update({
-      password: newPassword
-    });
-
-    await db.collection("passwordResetRequests").doc(resetDoc.id).delete();
-
-    return res.status(200).json({ message: "Password reset successfully" });
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
-  }
+  return res.json({ message: "Password successfully reset!" });
 };

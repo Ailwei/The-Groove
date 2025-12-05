@@ -5,7 +5,7 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "scheme": "thegroove",
-     "jsEngine": "hermes",
+    "jsEngine": "hermes",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -14,10 +14,10 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE"
-      
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.ailwei.TheGroove"
     },
     "web": {
       "output": "static"
@@ -27,6 +27,7 @@
       [
         "expo-splash-screen",
         {
+          "image": "./assets/splashscreen_logo.png",
           "imageWidth": 200,
           "resizeMode": "contain",
           "backgroundColor": "#ffffff",
@@ -39,6 +40,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d6172e77-14ee-4fb3-b74f-7ef9a791368f"
+      }
     }
   }
 }

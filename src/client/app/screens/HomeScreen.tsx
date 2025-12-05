@@ -9,6 +9,8 @@ import { SafeAreaView ,  useSafeAreaInsets} from 'react-native-safe-area-context
 import MapView, { Marker } from 'react-native-maps';
 import * as Location from 'expo-location';
 import React from 'react';
+import { registerForPush } from '../pushNotifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface HomeScreenProps {
   grooveTags: GrooveTag[];
@@ -97,22 +99,17 @@ const getSortedGrooves = () => {
   };
 const sortedGrooves = getSortedGrooves();
 
-  useEffect(() => {
-    if (!hasShownNotification) {
-      const veryBusySpots = grooveTags.filter(tag => tag.vibe === 'very-busy');
-      if (veryBusySpots.length > 0) {
-        setTimeout(() => {
-          Toast.show({
-            type: 'info',
-            text1: '🔥 A groove near you is heating up!',
-            text2: veryBusySpots[0].location,
-            position: 'top'
-          });
-          setHasShownNotification(true);
-        }, 1000);
-      }
-    }
-  }, [grooveTags, hasShownNotification]);
+useEffect(() => {
+  const registerPushToken = async () => {
+    const userId = await AsyncStorage.getItem('token');
+    if (!userId) return;
+
+    const token = await registerForPush(userId);
+    console.log('Push token:', token);
+  };
+
+  registerPushToken();
+}, []);
 
   const getVibeColor = (vibe: GrooveTag['vibe']) => {
     switch (vibe) {
@@ -186,7 +183,11 @@ const ProfileAnchor = (
             <Text style={styles.legendText}>Quiet</Text>
           </View>
         </View>
- {userLocation && (
+{isLocationLoading ? (
+  <View style={styles.initialLoader}>
+    <Text style={styles.initialLoaderText}>Finding your location…</Text>
+  </View>
+) : (
   <>
     <MapView
   ref={mapRef}
@@ -194,8 +195,8 @@ const ProfileAnchor = (
   showsUserLocation={true}
   showsMyLocationButton={true}
   initialRegion={{
-    latitude: userLocation.lat,
-    longitude: userLocation.lng,
+    latitude: userLocation!.lat,
+    longitude: userLocation!.lng,
     latitudeDelta: 0.05,
     longitudeDelta: 0.05,
   }}
@@ -346,6 +347,19 @@ loadingText: {
   fontWeight: "600",
   color: "#555",
 },
+initialLoader: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: '#f1f5f9',
+},
+
+initialLoaderText: {
+  fontSize: 16,
+  color: '#444',
+  fontWeight: '600',
+},
+
 
 
   legendItem: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },

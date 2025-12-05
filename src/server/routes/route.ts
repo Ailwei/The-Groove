@@ -1,15 +1,15 @@
 import { Router } from "express";
 
-import { tagGrooveController,getGroovesController, supportGrooveController } from "../controllers.ts/grooveController";
-import { createUserController, getUserController, deleteUserController } from "../controllers.ts/userController";
-import { reportController } from "../controllers.ts/reportController";
-import { loginController } from "../controllers.ts/loginController";
-import { deleteAccount } from "../controllers.ts/deleteAccount";
+import { deleteAccount } from "../controllers/deleteAccount";
+import { getGroovesController, tagGrooveController } from "../controllers/grooveController";
+import { loginController } from "../controllers/loginController";
+import { requestPasswordResetController } from "../controllers/passwordResetRequest";
+import { getProfileController } from "../controllers/profileDetailsController";
+import { reportController } from "../controllers/reportController";
+import { resetPasswordWithOtp } from "../controllers/resetPassword";
+import { createUserController, getUserController } from "../controllers/userController";
 import { authMiddleware } from "../middleWare/middleWare";
-import { getProfileController } from "../controllers.ts/profileDetailsController";
-import { resetPasswordWithOtp } from "../controllers.ts/resetPassword";
-import { requestPasswordResetController } from "../controllers.ts/passwordResetRequest";
-
+import {saveTokenController} from "../controllers/save-device-token";
 
 const router = Router();
 
@@ -26,5 +26,6 @@ router.get("/users/:id", getUserController);
 router.delete("/user/deleteAccount/:id",authMiddleware, deleteAccount);
 router.get("/user/profile",authMiddleware, getProfileController)
 router.post("/reports", reportController);
+router.post("/save-device-token", saveTokenController)
 
 export default router;

@@ -1,51 +1,5 @@
 {
-  "expo": {
-    "name": "TheGroove",
-    "slug": "TheGroove",
-    "version": "1.0.0",
-    "orientation": "portrait",
-    "scheme": "thegroove",
-    "jsEngine": "hermes",
-    "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
-    "android": {
-      "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE"
-      },
-      "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false,
-      "package": "com.ailwei.TheGroove"
-    },
-    "web": {
-      "output": "static"
-    },
-    "plugins": [
-      "expo-router",
-      [
-        "expo-splash-screen",
-        {
-          "image": "./assets/splashscreen_logo.png",
-          "imageWidth": 200,
-          "resizeMode": "contain",
-          "backgroundColor": "#ffffff",
-          "dark": {
-            "backgroundColor": "#000000"
-          }
-        }
-      ]
-    ],
-    "experiments": {
-      "typedRoutes": true,
-      "reactCompiler": true
-    },
-    "extra": {
-      "router": {},
-      "eas": {
-        "projectId": "d6172e77-14ee-4fb3-b74f-7ef9a791368f"
-      }
-    }
+  "android": {
+    "package": "com.ailwei.thegroove"
   }
 }

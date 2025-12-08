@@ -70,7 +70,6 @@ const [resetEmail, setResetEmail] = useState<string | null>(null);
           endTime: new Date(g.expiresAt._seconds * 1000),
           supportCount: g.supporters?.length || 0,
         }));
-        console.log("data", res.data.support)
         setGrooveTags(formattedGrooves);
       } catch (err) {
         console.error('Error fetching grooves:', err);

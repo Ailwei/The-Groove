@@ -4,7 +4,7 @@ import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-export async function registerForPush(userId: string) {
+export default async function registerForPush(userId: string) {
   if (!Constants.isDevice) {
     console.warn('Must use physical device for push notifications');
     return null;

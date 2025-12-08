@@ -1,4 +1,4 @@
-package com.ailwei.TheGroove
+package com.ailwei.thegroove
 import expo.modules.splashscreen.SplashScreenManager
 
 import android.os.Build

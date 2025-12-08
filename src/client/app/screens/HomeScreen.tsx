@@ -6,10 +6,10 @@ import { GrooveDetailsPopup } from './GrooveDetailsPopup';
 import Toast from 'react-native-toast-message';
 import { Provider, Menu as PaperMenu } from 'react-native-paper';
 import { SafeAreaView ,  useSafeAreaInsets} from 'react-native-safe-area-context';
-import MapView, { Marker } from 'react-native-maps';
+import MapView, { Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
 import React from 'react';
-import { registerForPush } from '../pushNotifications';
+import registerForPush from '../utilsF/pushNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface HomeScreenProps {
@@ -35,7 +35,6 @@ export function HomeScreen({
   const mapRef = useRef<MapView | null>(null);
 
   const [filter, setFilter] = useState<FilterType>('new');
-  const [hasShownNotification, setHasShownNotification] = useState(false);
   const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [profileMenuVisible, setProfileMenuVisible] = useState(false);
   const [mapRegion, setMapRegion] = useState<any>(null);
@@ -43,6 +42,8 @@ export function HomeScreen({
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [userFocused, setUserFocused] = useState(false);
 const [isMapReady, setIsMapReady] = useState(false);
+
+
 
 
 
@@ -57,6 +58,8 @@ const [isMapReady, setIsMapReady] = useState(false);
       }
 
       const location = await Location.getCurrentPositionAsync({});
+      console.log('Location in APK:', location);
+
       
       setUserLocation({
         lat: location.coords.latitude,
@@ -217,7 +220,7 @@ const ProfileAnchor = (
 
       <Marker
         coordinate={{
-          latitude: tag.coordinates.lat + 0.00015,
+          latitude: tag.coordinates.lat,
           longitude: tag.coordinates.lng,
         }}
         anchor={{ x: 0.5, y: 1 }}

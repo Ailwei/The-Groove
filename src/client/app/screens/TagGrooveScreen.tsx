@@ -70,78 +70,111 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
   }, []);
 
   const handleSubmit = async () => {
-    const token = await AsyncStorage.getItem("token");
-    const now = new Date();
+  const token = await AsyncStorage.getItem("token");
+  const now = new Date();
 
-    if (endTime.getTime() <= now.getTime()) {
-      Toast.show({ type: "error", text1: "End time must be in the future" });
-      return;
-    }
+  const fixedStart = new Date(startTime);
+  const fixedEnd = new Date(endTime);
 
-    if (endTime.getTime() <= startTime.getTime()) {
-      Toast.show({ type: "error", text1: "End time must be after start time" });
-      return;
-    }
+  if (fixedEnd.getTime() <= fixedStart.getTime()) {
+    fixedEnd.setDate(fixedEnd.getDate() + 1);
+  }
 
-    if (!coords) {
-      Toast.show({ type: "error", text1: "Current location not available" });
-      return;
-    }
+  if (fixedEnd.getTime() <= now.getTime()) {
+    Toast.show({ type: "error", text1: "End time must be in the future" });
+    return;
+  }
 
-    try {
-      const submitCoords = coords;
+  if (!coords) {
+    Toast.show({
+      type: "error",
+      text1: "Current location not available...wait for it to load"
+    });
+    return;
+  }
 
-      onSubmit({
-        coordinates: submitCoords,
-        vibe,
-        message: message.trim() || undefined,
-        location,
-        startTime,
-        endTime,
-      });
-
-      await axios.post("http://192.168.18.29:3000/api/grooves/tag", {
+  try {
+    const submitCoords = coords;
+    onSubmit({
+      coordinates: submitCoords,
+      vibe,
+      message: message.trim() || undefined,
+      location,
+      startTime: fixedStart,
+      endTime: fixedEnd,
+    });
+    const response = await axios.post(
+      "http://192.168.18.29:3000/api/grooves/tag",
+      {
         lat: submitCoords.lat,
         lng: submitCoords.lng,
         vibe,
         message: message.trim() || null,
         location,
-        startTime,
-        endTime
-      }, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+        startTime: fixedStart.toISOString(),
+        endTime: fixedEnd.toISOString(),
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
+    const data = response.data;
+
+    if (data?.existingGroove && data.totalSupports === null) {
+      Toast.show({
+        type: "info",
+        text1: "You already own this groove",
+        text2: "You cannot support your own groove",
+      });
+      return;
+    }
+
+    if (data?.existingGroove && data.totalSupports !== null) {
       Toast.show({
         type: "success",
-        text1: "Groove tagged successfully 🎉",
-        position: "bottom",
-        visibilityTime: 3000,
+        text1: "Support Added",
+        text2: "A groove already exists here. You supported it instead.",
       });
+      return;
+    }
 
-    } catch (err) {
-      console.error(err);
+    if (response.status === 201) {
+      Toast.show({
+        type: "success",
+        text1: "Groove tagged successfully",
+      });
+      return;
+    }
+
+    if (data?.error) {
       Toast.show({
         type: "error",
-        text1: "Failed to tag groove",
-        text2: "Something went wrong.",
+        text1: "Error",
+        text2: data.error,
       });
+      return;
     }
-  };
 
+  } catch (err) {
+    console.error(err);
+    Toast.show({
+      type: "error",
+      text1: "Failed to tag groove",
+      text2: "Something went wrong.",
+    });
+  }
+};
   useEffect(() => {
     Toast.show({
       type: 'info',
       text1: '💡 Your tagged spot will appear on the map',
       position: 'top',
-      visibilityTime: 8000,
+      visibilityTime: 5000,
       autoHide: true
     });
   }, []);
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
-      <Toast />
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.iconButton}>
           <ArrowLeft width={24} height={24} />
@@ -266,7 +299,7 @@ const styles = StyleSheet.create({
   vibeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   vibeButton: { flexDirection: 'row', alignItems: 'center', borderWidth: 2, borderColor: '#d1d5db', borderRadius: 8, padding: 12, marginBottom: 8 },
   vibeCircle: { width: 24, height: 24, borderRadius: 12 },
-  submitButton: { position: 'absolute', bottom: 20, left: 16, right: 16, backgroundColor: '#8b5cf6', padding: 16, alignItems: 'center', borderRadius: 20 },
+  submitButton: { position: 'absolute', bottom: 5, left: 16, right: 16, backgroundColor: '#8b5cf6', padding: 16, alignItems: 'center', borderRadius: 20 },
   timeButton: { padding: 12, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 10, backgroundColor: '#fff' },
   submitText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
 });

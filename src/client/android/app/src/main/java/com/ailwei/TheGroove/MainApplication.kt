@@ -1,4 +1,4 @@
-package com.ailwei.TheGroove
+package com.ailwei.thegroove
 
 import android.app.Application
 import android.content.res.Configuration

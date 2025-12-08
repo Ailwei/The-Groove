@@ -1,8 +1,14 @@
 import { Navigation, X } from 'lucide-react-native';
-import React from 'react';
+import React , {useState, useEffect}from 'react';
 import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GrooveTag } from '..';
 import { SafeAreaView,  useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Toast from 'react-native-toast-message';
+import axios from 'axios';
+import ReportModal from '../componet/reportModal';
+import {jwtDecode} from "jwt-decode";
+
 
 interface GrooveDetailsPopupProps {
   groove: GrooveTag;
@@ -11,7 +17,27 @@ interface GrooveDetailsPopupProps {
 }
 
 export function GrooveDetailsPopup({ groove, onClose, userLocation }: GrooveDetailsPopupProps) {
+  const [reportModalVisible, setReportModalVisible] = useState(false);
+const [currentUser, setCurrentUser] = useState<{ userId: string } | null>(null);
+
+ useEffect(() => {
+  const loadUser = async () => {
+    const token = await AsyncStorage.getItem("token");
+    if (!token) return;
+
+    try {
+      
+      const decoded: any = jwtDecode(token);
+      setCurrentUser({ userId: decoded.userId });
+    } catch (e) {
+      console.log("Failed to decode token", e);
+    }
+  };
+
+  loadUser();
+}, []);
   const getVibeColor = (vibe: GrooveTag['vibe']) => {
+
     switch (vibe) {
       case 'very-busy': return '#ef4444';
       case 'busy': return '#f97316';
@@ -73,6 +99,57 @@ export function GrooveDetailsPopup({ groove, onClose, userLocation }: GrooveDeta
     `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${destLat},${destLng}&travelmode=driving`
   );
 };
+const handleSupport = async () => {
+  const token = await AsyncStorage.getItem('token');
+  if (!token) return;
+
+  try {
+    const res = await axios.post(
+      'http://192.168.18.29:3000/api/groove/support',
+      { grooveId: groove.id },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    Toast.show({
+      type: 'success',
+      text1: res.data.message || 'Groove supported!',
+      text2: res.data.totalSupports ? `Total supports: ${res.data.totalSupports}` : undefined,
+    });
+  } catch (err: any) {
+    Toast.show({
+      type: 'error',
+      text1: 'Support failed',
+      text2: err.response?.data?.error || err.message || 'Something went wrong',
+    });
+  }
+};
+
+const handleReportSubmit = async (reason: string) => {
+  const token = await AsyncStorage.getItem('token');
+  if (!reason) return;
+
+  try {
+    const res = await axios.post(
+      'http://192.168.18.29:3000/api/groove/report',
+      { grooveId: groove.id, reason },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    Toast.show({
+      type: 'success',
+      text1: 'Report submitted successfully',
+    });
+  } catch (err: any) {
+    const message = err.response?.data?.error || err.message || 'Something went wrong';
+
+    Toast.show({
+      type: 'error',
+      text1: 'Failed to submit report',
+      text2: message,
+    });
+  } finally {
+    setReportModalVisible(false);
+  }
+};
 
   const insets = useSafeAreaInsets();
   return (
@@ -111,8 +188,27 @@ export function GrooveDetailsPopup({ groove, onClose, userLocation }: GrooveDeta
           <TouchableOpacity style={styles.navigateButton} onPress={handleNavigate}>
             <Navigation width={20} height={20} color="#fff" style={{ marginRight: 8 }} />
             <Text style={styles.navigateText}>Navigate</Text>
+
           </TouchableOpacity>
         </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
+  <TouchableOpacity style={[styles.navigateButton, { backgroundColor: '#8b5cf6', flex: 1, marginRight: 8 }]} onPress={handleSupport}>
+    <Text style={styles.navigateText}>👍 Support</Text>
+  </TouchableOpacity>
+<TouchableOpacity
+  style={[styles.navigateButton, { backgroundColor: '#ef4444', flex: 1, marginLeft: 8 }]}
+  onPress={() => setReportModalVisible(true)}
+>
+  <Text style={styles.navigateText}>🚩 Report</Text>
+</TouchableOpacity>
+</View>
+<ReportModal
+  visible={reportModalVisible}
+  onSubmit={handleReportSubmit}
+  onClose={() => setReportModalVisible(false)}
+/>
+
+
       </View>
     </SafeAreaView>
   );

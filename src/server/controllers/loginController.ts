@@ -3,7 +3,7 @@ import { db } from "../firebase/firestore";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
+const JWT_SECRET = process.env.JWT_SECRET || "8486478nhgurhgerfuh347yt38vgv3bgv34tyv384t3";
 
 export const loginController = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -32,6 +32,7 @@ export const loginController = async (req: Request, res: Response) => {
       JWT_SECRET,
       { expiresIn: "7d" }
     );
+console.log("Token generated:", token);
 
     return res.status(200).json({
       message: "Login successful",

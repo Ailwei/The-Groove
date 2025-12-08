@@ -40,6 +40,7 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
   const userId = req.user?.userId;
   const username = req.user?.username;
 
+
   if (!userId || !username) {
     return res.status(401).json({ error: "Unauthorized: User not found" });
   }
@@ -51,8 +52,15 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
   }
 
   try {
-    const startAtTimestamp = admin.firestore.Timestamp.fromDate(new Date(startTime));
-    const expiresAtTimestamp = admin.firestore.Timestamp.fromDate(new Date(endTime));
+    let start = new Date(startTime);
+    let end = new Date(endTime);
+
+    if(end.getTime() <= start.getTime()){
+      end.setDate(end.getDate() + 1)
+    }
+    const startAtTimestamp = admin.firestore.Timestamp.fromDate(start);
+    const expiresAtTimestamp = admin.firestore.Timestamp.fromDate(end);
+
 
     const snapshot = await db.collection("grooves").get();
     let existingGroove: any = null;
@@ -161,6 +169,15 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
 
     if (grooveData.userId === userId) {
       return res.status(400).json({ error: "You cannot support your own groove" });
+    }
+
+    const alreadySupported = grooveData.supporters?.some((s: any) => s.userId === userId);
+
+    if (alreadySupported) {
+      return res.status(400).json({
+        error: "You have already supported this groove",
+        totalSupports: grooveData.supporters.length,
+      });
     }
 
     const totalSupports = await addSupporter(grooveRef, userId, username);

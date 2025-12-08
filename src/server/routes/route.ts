@@ -10,7 +10,7 @@ import { resetPasswordWithOtp } from "../controllers/resetPassword";
 import { createUserController, getUserController } from "../controllers/userController";
 import { authMiddleware } from "../middleWare/middleWare";
 import {saveTokenController} from "../controllers/save-device-token";
-
+import { supportGrooveController } from "../controllers/grooveController";
 const router = Router();
 
 
@@ -25,7 +25,8 @@ router.post("/users/create", createUserController);
 router.get("/users/:id", getUserController);
 router.delete("/user/deleteAccount/:id",authMiddleware, deleteAccount);
 router.get("/user/profile",authMiddleware, getProfileController)
-router.post("/reports", reportController);
+router.post("/groove/report",authMiddleware, reportController);
 router.post("/save-device-token", saveTokenController)
+router.post("/groove/support", authMiddleware, supportGrooveController)
 
 export default router;

@@ -55,30 +55,39 @@ const [resetEmail, setResetEmail] = useState<string | null>(null);
     initApp();
   }, []);
 
-  useEffect(() => {
-    const fetchGrooves = async () => {
-      try {
-        const res = await axios.get('http://192.168.18.29:3000/api/grooves');
-        const formattedGrooves: GrooveTag[] = res.data.grooves.map((g: any) => ({
-          id: g.id,
-          coordinates: g.coordinates,
-          vibe: g.vibe,
-          message: g.message,
-          taggedAt: new Date(g.createdAt._seconds * 1000),
-          location: g.location || 'Unknown',
-          startTime: new Date(g.startAt._seconds * 1000),
-          endTime: new Date(g.expiresAt._seconds * 1000),
-          supportCount: g.supporters?.length || 0,
-        }));
-        setGrooveTags(formattedGrooves);
-      } catch (err) {
-        console.error('Error fetching grooves:', err);
-      }
-    };
-    fetchGrooves();
-    const interval = setInterval(fetchGrooves, 30000);
-    return () => clearInterval(interval);
-  }, []);
+useEffect(() => {
+  if (!userId) return;
+
+  const fetchGrooves = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const res = await axios.get('http://192.168.18.29:3000/api/grooves', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      const formattedGrooves: GrooveTag[] = res.data.grooves.map((g: any) => ({
+        id: g.id,
+        coordinates: g.coordinates,
+        vibe: g.vibe,
+        message: g.message,
+        taggedAt: new Date(g.createdAt._seconds * 1000),
+        location: g.location || 'Unknown',
+        startTime: new Date(g.startAt._seconds * 1000),
+        endTime: new Date(g.expiresAt._seconds * 1000),
+        supportCount: g.supporters?.length || 0,
+      }));
+
+      setGrooveTags(formattedGrooves);
+    } catch (err) {
+      console.error('Error fetching grooves:', err);
+    }
+  };
+
+  fetchGrooves();
+  const interval = setInterval(fetchGrooves, 30000);
+  return () => clearInterval(interval);
+}, [userId]);
+
 
   const handleSplashComplete = () => {
     if (loading) return;
@@ -166,7 +175,7 @@ const [resetEmail, setResetEmail] = useState<string | null>(null);
         />
       )}
       {currentScreen === 'tag' && <TagGrooveScreen onBack={() => setCurrentScreen('home')} onSubmit={handleAddGroove} />}
-      {currentScreen === 'profile' && <ProfileScreen grooveTags={grooveTags} onBack={() => setCurrentScreen('home')} onNavigateToSettings={() => setCurrentScreen('settings')} />}
+      {currentScreen === 'profile' && <ProfileScreen onBack={() => setCurrentScreen('home')} onNavigateToSettings={() => setCurrentScreen('settings')} />}
       {currentScreen === 'settings' && (
         <SettingsScreen
           onBack={() => setCurrentScreen('home')}

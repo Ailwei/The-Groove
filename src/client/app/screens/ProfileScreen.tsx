@@ -7,7 +7,6 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 interface ProfileScreenProps {
-  grooveTags: GrooveTag[];
   onBack: () => void;
   onNavigateToSettings: () => void;
 }
@@ -21,19 +20,20 @@ interface ProfileData {
   hotSpots: number;
 }
 
-export function ProfileScreen({ grooveTags, onBack, onNavigateToSettings }: ProfileScreenProps) {
+export function ProfileScreen({ onBack, onNavigateToSettings }: ProfileScreenProps) {
   const [profile, setProfile] = React.useState<ProfileData | null>(null);
-  const userTags = grooveTags.slice(0, 2);
+  const [userTags, setUserTags] = React.useState<GrooveTag[]>([]);
 
   React.useEffect(() => {
     const fetchProfile = async () => {
-      const token = await AsyncStorage.getItem("token");
+      const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
       try {
-        const res = await axios.get("http://192.168.18.29:3000/api/user/profile", {
+        const res = await axios.get('http://192.168.18.29:3000/api/user/profile', {
           headers: { Authorization: `Bearer ${token}` },
         });
+
         const data = res.data;
         setProfile({
           username: data.username,
@@ -44,12 +44,56 @@ export function ProfileScreen({ grooveTags, onBack, onNavigateToSettings }: Prof
           hotSpots: data.hotSpots,
         });
       } catch (err) {
-        console.log("Failed to fetch profile:", err);
+        console.log('Failed to fetch profile:', err);
       }
     };
 
     fetchProfile();
   }, []);
+
+  React.useEffect(() => {
+    const fetchUserGrooves = async () => {
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+      try {
+        const res = await axios.get('http://192.168.18.29:3000/api/grooves/userRecentGroove', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const parsed = res.data.grooves.map((g: any) => ({
+          ...g,
+          taggedAt: g.taggedAt ? new Date(g.taggedAt) : null,
+          startTime: g.startTime ? new Date(g.startTime) : null,
+          endTime: g.endTime ? new Date(g.endTime) : null,
+        }));
+
+        setUserTags(parsed);
+      } catch (err) {
+        console.error('Failed to fetch user grooves:', err);
+      }
+    };
+
+    fetchUserGrooves();
+  }, []);
+
+  const handleDelete = async (grooveId: string) => {
+    const token = await AsyncStorage.getItem('token');
+    if (!token) return;
+
+    try {
+      await axios.delete('http://192.168.18.29:3000/api/grooves/delete', {
+        headers: { Authorization: `Bearer ${token}` },
+        data: { grooveId },
+      });
+      setUserTags((prev) => prev.filter((tag) => tag.id !== grooveId));
+      setProfile((prev) =>
+        prev ? { ...prev, totalTags: prev.totalTags - 1 } : prev
+      );
+    } catch (err: any) {
+      console.error('Delete failed:', err.response?.data || err.message);
+    }
+  };
 
   const getVibeColor = (vibe: GrooveTag['vibe']) => {
     switch (vibe) {
@@ -69,7 +113,9 @@ export function ProfileScreen({ grooveTags, onBack, onNavigateToSettings }: Prof
     }
   };
 
-  const getTimeAgo = (date: Date) => {
+  const getTimeAgo = (date?: Date | null) => {
+    if (!date || !(date instanceof Date)) return 'Unknown time';
+
     const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
     if (minutes < 1) return 'Just now';
     if (minutes === 1) return '1 min ago';
@@ -80,6 +126,7 @@ export function ProfileScreen({ grooveTags, onBack, onNavigateToSettings }: Prof
     const days = Math.floor(hours / 24);
     return `${days} day${days > 1 ? 's' : ''} ago`;
   };
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -138,10 +185,13 @@ export function ProfileScreen({ grooveTags, onBack, onNavigateToSettings }: Prof
                   <View style={[styles.vibeDot, { backgroundColor: getVibeColor(tag.vibe) }]} />
                   <Text>{getVibeLabel(tag.vibe)}</Text>
                 </View>
-                <Text style={styles.tagTime}>{getTimeAgo(tag.taggedAt)}</Text>
+                <TouchableOpacity onPress={() => handleDelete(tag.id)}>
+                  <Text style={styles.deleteBtn}>Delete</Text>
+                </TouchableOpacity>
               </View>
               <Text style={styles.tagLocation}>{tag.location}</Text>
               {tag.message && <Text style={styles.tagMessage}>"{tag.message}"</Text>}
+              <Text style={styles.tagTime}>{getTimeAgo(tag.taggedAt)}</Text>
             </View>
           ))
         )}
@@ -174,6 +224,7 @@ const styles = StyleSheet.create({
   tagTime: { fontSize: 12, color: '#6b7280' },
   tagLocation: { color: '#6b7280', marginBottom: 4 },
   tagMessage: { fontStyle: 'italic', color: '#4b5563', backgroundColor: '#e5e7eb', padding: 4, borderRadius: 4 },
+  deleteBtn: { fontSize: 10, color: 'red' },
 });
 
 export default ProfileScreen;

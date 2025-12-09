@@ -55,7 +55,7 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
     let start = new Date(startTime);
     let end = new Date(endTime);
 
-    if(end.getTime() <= start.getTime()){
+    if (end.getTime() <= start.getTime()) {
       end.setDate(end.getDate() + 1)
     }
     const startAtTimestamp = admin.firestore.Timestamp.fromDate(start);
@@ -94,19 +94,19 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
       }
     };
 
-  if (existingGroove) {
-  const grooveRef = db.collection("grooves").doc(existingGroove.id);
+    if (existingGroove) {
+      const grooveRef = db.collection("grooves").doc(existingGroove.id);
 
-  const totalSupports = await addSupporter(grooveRef, userId, username);
+      const totalSupports = await addSupporter(grooveRef, userId, username);
 
-  return res.status(200).json({
-    message: "Groove already exists at this location — support added",
-    grooveId: existingGroove.id,
-    totalSupports,
-    existingGroove,
-    requiresConfirmation: false,
-  });
-}
+      return res.status(200).json({
+        message: "Groove already exists at this location — support added",
+        grooveId: existingGroove.id,
+        totalSupports,
+        existingGroove,
+        requiresConfirmation: false,
+      });
+    }
 
     const locationName = await resolveLocationName(lat, lng);
     const newGroove = {
@@ -187,6 +187,75 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
       totalSupports,
     });
   } catch (error: any) {
+    return res.status(500).json({ error: error.message });
+  }
+};
+export const getUserGroovesController = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.userId;
+
+    const snapshot = await db.collection("grooves")
+      .where("userId", "==", userId)
+      .orderBy("createdAt", "desc")
+      .limit(10)
+      .get();
+
+    const grooves = snapshot.docs.map(doc => {
+      const data = doc.data();
+
+      return {
+        id: doc.id,
+        coordinates: data.coordinates,
+        vibe: data.vibe,
+        message: data.message || "",
+        location: data.location || "Unknown",
+
+        taggedAt: data.createdAt ? data.createdAt.toDate() : null,
+        startTime: data.startAt ? data.startAt.toDate() : null,
+        endTime: data.expiresAt ? data.expiresAt.toDate() : null,
+
+        supportCount: data.supporters?.length || 0,
+      };
+    });
+
+    return res.json({ grooves });
+
+  } catch (err: any) {
+    console.error("🔥 Error fetching user grooves:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+export const deleteGrooveController = async (req: AuthRequest, res: Response) => {
+  const { grooveId } = req.body;
+  const userId = req.user?.userId;
+
+  if (!grooveId || !userId) {
+    return res.status(400).json({ error: "Required field missing" });
+  }
+
+  try {
+    const grooveRef = db.collection("grooves").doc(grooveId);
+    const grooveDoc = await grooveRef.get();
+
+    if (!grooveDoc.exists) {
+      return res.status(404).json({ error: "Groove not found" });
+    }
+
+    const grooveData = grooveDoc.data();
+    if (!grooveData) {
+      return res.status(500).json({ error: "Invalid groove data" });
+    }
+
+    if (grooveData.userId !== userId) {
+      return res.status(403).json({ error: "You can only delete your own groove" });
+    }
+
+    await grooveRef.delete();
+
+    return res.status(200).json({ message: "Groove deleted successfully" });
+  } catch (error: any) {
+    console.error("deleteGrooveController error:", error);
     return res.status(500).json({ error: error.message });
   }
 };

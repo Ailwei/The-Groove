@@ -11,18 +11,22 @@ import { createUserController, getUserController } from "../controllers/userCont
 import { authMiddleware } from "../middleWare/middleWare";
 import {saveTokenController} from "../controllers/save-device-token";
 import { supportGrooveController } from "../controllers/grooveController";
+import { deleteGrooveController } from "../controllers/grooveController";
+import { getUserGroovesController } from "../controllers/grooveController";
 const router = Router();
 
 
 router.post("/grooves/tag", authMiddleware,tagGrooveController);
-router.get("/grooves", getGroovesController);
+router.get("/grooves",authMiddleware, getGroovesController);
+router.get("/grooves/userRecentGroove",authMiddleware, getUserGroovesController);
+
 router.post("/users/login", loginController)
 router.post("/user/resetPassword", resetPasswordWithOtp )
 router.post("/user/forgotPassword", requestPasswordResetController)
+router.delete("/grooves/delete", authMiddleware, deleteGrooveController);
 
-
-router.post("/users/create", createUserController);
-router.get("/users/:id", getUserController);
+router.post("/users/create",authMiddleware, createUserController);
+router.get("/users/:id",authMiddleware, getUserController);
 router.delete("/user/deleteAccount/:id",authMiddleware, deleteAccount);
 router.get("/user/profile",authMiddleware, getProfileController)
 router.post("/groove/report",authMiddleware, reportController);

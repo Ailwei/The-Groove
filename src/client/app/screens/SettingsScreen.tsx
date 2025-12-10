@@ -6,6 +6,8 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Toast from 'react-native-toast-message';
 import * as Location from "expo-location";
+import { useContext } from 'react';
+import SettingsContext from '../contecxt/settingContext';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -13,8 +15,9 @@ interface SettingsScreenProps {
 }
 
 export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
-  const [locationAccuracy, setLocationAccuracy] = useState(true);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+ const [locationAccuracy, setLocationAccuracy] = useState<boolean | undefined>(undefined);
+const { highAccuracy, setHighAccuracy, notificationsEnabled, setNotificationsEnabled } = useContext(SettingsContext);
+
   const [notificationFrequency, setNotificationFrequency] = useState<'all' | 'important' | 'off'>('all');
   const [location, setLocation] = useState('Fetching location...');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -102,13 +105,6 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
       })();
     }, []);
   
-  useEffect(() => {
-    const loadAccuracy = async () => {
-      const saved = await AsyncStorage.getItem('highAccuracy');
-      if (saved !== null) setLocationAccuracy(saved === 'true');
-    };
-    loadAccuracy();
-  }, []);
 
   useEffect(() => {
     const loadNotificationSettings = async () => {
@@ -141,14 +137,11 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
               <Text>High Accuracy Mode</Text>
               <Text style={styles.description}>Use GPS for precise location tracking</Text>
             </View>
-            <Switch
-              value={locationAccuracy}
-              onValueChange={async (value) => {
-                setLocationAccuracy(value);
-                await AsyncStorage.setItem('highAccuracy', value ? 'true' : 'false');
-              }}
+           <Switch
+  value={highAccuracy}
+  onValueChange={setHighAccuracy}
+/>
 
-            />
           </View>
         </View>
 
@@ -162,14 +155,11 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
               <Text>Enable Notifications</Text>
               <Text style={styles.description}>Get alerts about nearby grooves</Text>
             </View>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={async (value) => {
-                setNotificationsEnabled(value);
-                await AsyncStorage.setItem('notificationsEnabled', value ? 'true' : 'false');
-              }}
+           <Switch
+  value={notificationsEnabled}
+  onValueChange={setNotificationsEnabled}
+/>
 
-            />
           </View>
 
           {notificationsEnabled && (

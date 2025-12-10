@@ -12,6 +12,7 @@ import { SignupScreen } from './screens/SignUp';
 import { LoginScreen } from './screens/LoginScreen';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
+import SettingsContext, { SettingsProvider } from './contecxt/settingContext';
 import axios from 'axios';
 
 export type Screen = 'splash' | 'signup' | 'login' | 'onboarding' | 'home' | 'tag' | 'profile' | 'settings' | 'forgotpassword' | 'resetpassword';
@@ -84,7 +85,7 @@ useEffect(() => {
   };
 
   fetchGrooves();
-  const interval = setInterval(fetchGrooves, 30000);
+  const interval = setInterval(fetchGrooves, 3000);
   return () => clearInterval(interval);
 }, [userId]);
 
@@ -130,6 +131,7 @@ useEffect(() => {
   if (loading) return <ActivityIndicator size="large" style={{ flex: 1 }} />;
 
   return (
+    <SettingsProvider>
     <View style={styles.container}>
       {currentScreen === 'splash' && <SplashScreen onComplete={handleSplashComplete} />}
       {currentScreen === 'signup' && (
@@ -188,6 +190,7 @@ useEffect(() => {
       )}
       <Toast />
     </View>
+    </SettingsProvider>
   );
 }
 

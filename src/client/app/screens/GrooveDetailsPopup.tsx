@@ -14,6 +14,8 @@ interface GrooveDetailsPopupProps {
   groove: GrooveTag;
   userLocation: { lat: number; lng: number } | null;
   onClose: () => void;
+  onSupport?: (id: string) => void;
+
 }
 
 export function GrooveDetailsPopup({ groove, onClose, userLocation }: GrooveDetailsPopupProps) {
@@ -100,19 +102,35 @@ const [currentUser, setCurrentUser] = useState<{ userId: string } | null>(null);
   );
 };
 const handleSupport = async () => {
+  if (!userLocation) {
+    Toast.show({
+      type: 'error',
+      text1: 'Location required',
+      text2: 'Cannot support groove without your current location',
+    });
+    return;
+  }
+
   const token = await AsyncStorage.getItem('token');
   if (!token) return;
 
   try {
     const res = await axios.post(
       'http://192.168.18.29:3000/api/groove/support',
-      { grooveId: groove.id },
+      {
+        grooveId: groove.id,
+        userLat: userLocation.lat,
+        userLng: userLocation.lng,
+      },
       { headers: { Authorization: `Bearer ${token}` } }
     );
+
     Toast.show({
       type: 'success',
       text1: res.data.message || 'Groove supported!',
-      text2: res.data.totalSupports ? `Total supports: ${res.data.totalSupports}` : undefined,
+      text2: res.data.totalSupports
+        ? `Total supports: ${res.data.totalSupports}`
+        : undefined,
     });
   } catch (err: any) {
     Toast.show({

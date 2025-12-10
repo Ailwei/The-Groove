@@ -1,5 +1,5 @@
-import { useState, useEffect ,  useRef} from 'react';
-import { Plus, Filter, Menu } from 'lucide-react-native';
+import { useState, useContext,useEffect ,  useRef} from 'react';
+import { Plus, Menu } from 'lucide-react-native';
 import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { GrooveTag } from '..';
 import { GrooveDetailsPopup } from './GrooveDetailsPopup';
@@ -11,6 +11,7 @@ import * as Location from 'expo-location';
 import React from 'react';
 import registerForPush from '../utilsF/pushNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import SettingsContext from '../contecxt/settingContext';
 
 interface HomeScreenProps {
   grooveTags: GrooveTag[];
@@ -21,7 +22,6 @@ interface HomeScreenProps {
   onSelectGroove: (groove: GrooveTag | null) => void;
 }
 
-type FilterType = 'popular' | 'nearest' | 'new';
 const { width, height } = Dimensions.get('window');
 
 export function HomeScreen({
@@ -34,21 +34,19 @@ export function HomeScreen({
 }: HomeScreenProps) {
   const mapRef = useRef<MapView | null>(null);
 
-  const [filter, setFilter] = useState<FilterType>('new');
-  const [filterMenuVisible, setFilterMenuVisible] = useState(false);
   const [profileMenuVisible, setProfileMenuVisible] = useState(false);
   const [mapRegion, setMapRegion] = useState<any>(null);
   const [isLocationLoading, setIsLocationLoading] = useState(true);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [userFocused, setUserFocused] = useState(false);
-const [isMapReady, setIsMapReady] = useState(false);
-
-
-
+  const [isMapReady, setIsMapReady] = useState(false);
+  const [grooves, setGrooves] = useState<GrooveTag[]>([]);
+  const { highAccuracy } = useContext(SettingsContext);
 
 
    useEffect(() => {
   (async () => {
+
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -57,10 +55,10 @@ const [isMapReady, setIsMapReady] = useState(false);
         return;
       }
 
-      const location = await Location.getCurrentPositionAsync({});
-      console.log('Location in APK:', location);
+      const location = await Location.getCurrentPositionAsync({
+        accuracy: highAccuracy ? Location.Accuracy.Highest : Location.Accuracy.Balanced,
+      });
 
-      
       setUserLocation({
         lat: location.coords.latitude,
         lng: location.coords.longitude,
@@ -78,29 +76,17 @@ const [isMapReady, setIsMapReady] = useState(false);
       setIsLocationLoading(false);
     }
   })();
-}, []);
+}, [highAccuracy]);
+
 
 
 const getSortedGrooves = () => {
-   const now = new Date();
-  const active = grooveTags.filter(tag => 
-    now >= tag.startTime && now <= tag.endTime
-  )
-    switch (filter) {
-      case 'popular':
-        return active.sort((a, b) => {
-          const vibeOrder = { 'very-busy': 0, 'busy': 1, 'mild': 2, 'quiet': 3 };
-          return vibeOrder[a.vibe] - vibeOrder[b.vibe];
-        });
-      case 'nearest':
-        return active;
-      case 'new':
-        return active.sort((a, b) => b.taggedAt.getTime() - a.taggedAt.getTime());
-      default:
-        return active;
-    }
-  };
+  const now = new Date();
+  return grooveTags.filter(tag => now >= tag.startTime && now <= tag.endTime);
+};
+
 const sortedGrooves = getSortedGrooves();
+
 
 useEffect(() => {
   const registerPushToken = async () => {
@@ -124,11 +110,6 @@ useEffect(() => {
   };
 
   const insets = useSafeAreaInsets();
-const FilterAnchor = (
-  <TouchableOpacity onPress={() => setFilterMenuVisible(prev => !prev)} style={{ padding: 8 }}>
-    <Filter size={24} color="black" />
-  </TouchableOpacity>
-);
 
 const ProfileAnchor = (
   <TouchableOpacity onPress={() => setProfileMenuVisible(prev => !prev)} style={{ padding: 8, marginLeft: 12 }}>
@@ -144,15 +125,7 @@ const ProfileAnchor = (
           <Text style={styles.title}>THE GROOOOOVE</Text>
           <View style={styles.headerButtons}>
             <View style={{ flexDirection: 'row' }}>
-  <PaperMenu
-    visible={filterMenuVisible}
-    onDismiss={() => setFilterMenuVisible(false)}
-    anchor={FilterAnchor}
-  >
-    <PaperMenu.Item onPress={() => { setFilter('popular'); setFilterMenuVisible(false); }} title="Popular" />
-    <PaperMenu.Item onPress={() => { setFilter('nearest'); setFilterMenuVisible(false); }} title="Nearest" />
-    <PaperMenu.Item onPress={() => { setFilter('new'); setFilterMenuVisible(false); }} title="New" />
-  </PaperMenu>
+  
   <PaperMenu
     visible={profileMenuVisible}
     onDismiss={() => setProfileMenuVisible(false)}
@@ -262,7 +235,20 @@ const ProfileAnchor = (
           <Text style={styles.tagButtonText}>Tag My Groove</Text>
         </TouchableOpacity>
         {selectedGroove && (
-          <GrooveDetailsPopup groove={selectedGroove} onClose={() => onSelectGroove(null)}   userLocation={userLocation} />
+<GrooveDetailsPopup 
+    groove={selectedGroove}
+    onClose={() => onSelectGroove(null)}
+    userLocation={userLocation}
+    onSupport={(id) => {
+        setGrooves(prev => 
+            prev.map(g =>
+                g.id === id 
+                    ? { ...g, supportCount: (g.supportCount ?? 0) + 1 }
+                    : g
+            )
+        );
+    }}
+/>
         )}
 
         <Toast />

@@ -3,7 +3,7 @@ export function deg2rad(deg: number): number {
   return deg * (Math.PI / 180);
 }
 
-export function getDistanceFromLatLonInM(
+export default function getDistanceFromLatLonInM(
   lat1: number, lon1: number, lat2: number, lon2: number
 ): number {
   const R = 6371000;

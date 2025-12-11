@@ -9,9 +9,10 @@ import { SafeAreaView ,  useSafeAreaInsets} from 'react-native-safe-area-context
 import MapView, { Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
 import React from 'react';
-import registerForPush from '../utilsF/pushNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import SettingsContext from '../contecxt/settingContext';
+import axios from 'axios';
+
 
 interface HomeScreenProps {
   grooveTags: GrooveTag[];
@@ -78,27 +79,11 @@ export function HomeScreen({
   })();
 }, [highAccuracy]);
 
-
-
 const getSortedGrooves = () => {
   const now = new Date();
   return grooveTags.filter(tag => now >= tag.startTime && now <= tag.endTime);
 };
-
 const sortedGrooves = getSortedGrooves();
-
-
-useEffect(() => {
-  const registerPushToken = async () => {
-    const userId = await AsyncStorage.getItem('token');
-    if (!userId) return;
-
-    const token = await registerForPush(userId);
-    console.log('Push token:', token);
-  };
-
-  registerPushToken();
-}, []);
 
   const getVibeColor = (vibe: GrooveTag['vibe']) => {
     switch (vibe) {
@@ -178,7 +163,7 @@ const ProfileAnchor = (
   }}
   onMapReady={() => setIsMapReady(true)}
 >
-  {sortedGrooves.map(tag => (
+  {(sortedGrooves).map(tag => (
     <React.Fragment key={tag.id}>
       <Marker
         coordinate={{
@@ -210,8 +195,9 @@ const ProfileAnchor = (
           justifyContent: 'center',
         }}>
           <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
-            +{tag.supportCount || 0}
-          </Text>
+  +{Math.max((tag.supportCount ?? 0) - 1, 0)}
+</Text>
+
         </View>
       </Marker>
     </React.Fragment>

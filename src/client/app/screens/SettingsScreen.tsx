@@ -15,12 +15,16 @@ interface SettingsScreenProps {
 }
 
 export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
- const [locationAccuracy, setLocationAccuracy] = useState<boolean | undefined>(undefined);
-const { highAccuracy, setHighAccuracy, notificationsEnabled, setNotificationsEnabled } = useContext(SettingsContext);
-
-  const [notificationFrequency, setNotificationFrequency] = useState<'all' | 'important' | 'off'>('all');
   const [location, setLocation] = useState('Fetching location...');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const {
+    highAccuracy,
+    setHighAccuracy,
+    notificationsEnabled,
+    setNotificationsEnabled,
+    notificationFrequency,
+    setNotificationFrequency
+  } = useContext(SettingsContext);
 
   const handleDeleteAccount = async () => {
     try {
@@ -71,40 +75,40 @@ const { highAccuracy, setHighAccuracy, notificationsEnabled, setNotificationsEna
     }
   };
   useEffect(() => {
-      (async () => {
-        try {
-          const { status } = await Location.requestForegroundPermissionsAsync();
-          if (status !== 'granted') {
-            Toast.show({ type: 'error', text1: 'Location permission denied' });
-            setLocation('Unknown Location');
-            return;
-          }
-  
-          const pos = await Location.getCurrentPositionAsync({});
-          const currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          setCoords(currentCoords);
-  
-          const res = await axios.get("https://nominatim.openstreetmap.org/reverse", {
-            params: { lat: currentCoords.lat, lon: currentCoords.lng, format: "json" },
-            headers: { "User-Agent": "TheGrooveApp/1.0" }
-          });
-  
-          const address = res.data.address;
-          let locationName = "Unknown Location";
-          if (address) {
-            locationName = address.road
-              ? `${address.road}, ${address.suburb || address.city || ""}`.trim()
-              : address.suburb || address.city || "Unknown Location";
-          }
-  
-          setLocation(locationName);
-        } catch (err) {
-          console.error("Failed to fetch location:", err);
-          setLocation("Unknown Location");
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          Toast.show({ type: 'error', text1: 'Location permission denied' });
+          setLocation('Unknown Location');
+          return;
         }
-      })();
-    }, []);
-  
+
+        const pos = await Location.getCurrentPositionAsync({});
+        const currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setCoords(currentCoords);
+
+        const res = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+          params: { lat: currentCoords.lat, lon: currentCoords.lng, format: "json" },
+          headers: { "User-Agent": "TheGrooveApp/1.0" }
+        });
+
+        const address = res.data.address;
+        let locationName = "Unknown Location";
+        if (address) {
+          locationName = address.road
+            ? `${address.road}, ${address.suburb || address.city || ""}`.trim()
+            : address.suburb || address.city || "Unknown Location";
+        }
+
+        setLocation(locationName);
+      } catch (err) {
+        console.error("Failed to fetch location:", err);
+        setLocation("Unknown Location");
+      }
+    })();
+  }, []);
+
 
   useEffect(() => {
     const loadNotificationSettings = async () => {
@@ -116,6 +120,40 @@ const { highAccuracy, setHighAccuracy, notificationsEnabled, setNotificationsEna
     loadNotificationSettings();
   }, []);
 
+  const updateSettings = async (newSettings: {
+    highAccuracy?: boolean;
+    notificationsEnabled?: boolean;
+    notificationFrequency?: 'all' | 'important' | 'off';
+  }) => {
+    try {
+      const userId = await AsyncStorage.getItem('userId');
+      if (!userId) return;
+
+      const token = await AsyncStorage.getItem('token');
+      if (!token) return;
+
+   await axios.patch(
+  `http://192.168.18.29:3000/api/updateSettings/${userId}`,
+  newSettings,
+  { headers: { Authorization: `Bearer ${token}` } }
+);
+
+
+
+
+      if (newSettings.notificationsEnabled !== undefined) {
+        await AsyncStorage.setItem('notificationsEnabled', newSettings.notificationsEnabled.toString());
+      }
+      if (newSettings.notificationFrequency) {
+        await AsyncStorage.setItem('notificationFrequency', newSettings.notificationFrequency);
+      }
+
+      Toast.show({ type: 'success', text1: 'Settings updated' });
+    } catch (err) {
+      console.log(err);
+      Toast.show({ type: 'error', text1: 'Failed to update settings' });
+    }
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -137,10 +175,14 @@ const { highAccuracy, setHighAccuracy, notificationsEnabled, setNotificationsEna
               <Text>High Accuracy Mode</Text>
               <Text style={styles.description}>Use GPS for precise location tracking</Text>
             </View>
-           <Switch
-  value={highAccuracy}
-  onValueChange={setHighAccuracy}
-/>
+            <Switch
+              value={highAccuracy}
+              onValueChange={async (value) => {
+                setHighAccuracy(value);
+                await updateSettings({ highAccuracy: value });
+              }}
+            />
+
 
           </View>
         </View>
@@ -155,10 +197,14 @@ const { highAccuracy, setHighAccuracy, notificationsEnabled, setNotificationsEna
               <Text>Enable Notifications</Text>
               <Text style={styles.description}>Get alerts about nearby grooves</Text>
             </View>
-           <Switch
-  value={notificationsEnabled}
-  onValueChange={setNotificationsEnabled}
-/>
+            <Switch
+              value={notificationsEnabled}
+              onValueChange={async (value) => {
+                setNotificationsEnabled(value);
+                await updateSettings({ notificationsEnabled: value });
+              }}
+            />
+
 
           </View>
 
@@ -173,8 +219,9 @@ const { highAccuracy, setHighAccuracy, notificationsEnabled, setNotificationsEna
                   ]}
                   onPress={async () => {
                     setNotificationFrequency(freq);
-                    await AsyncStorage.setItem('notificationFrequency', freq);
+                    await updateSettings({ notificationFrequency: freq });
                   }}
+
                 >
                   <Text style={styles.freqTitle}>
                     {freq === 'all' ? 'All Grooves' : freq === 'important' ? 'Important Only' : 'Minimal'}

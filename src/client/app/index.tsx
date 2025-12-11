@@ -14,6 +14,7 @@ import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import SettingsContext, { SettingsProvider } from './contecxt/settingContext';
 import axios from 'axios';
+import NotificationRegistrar from './componet/NotificationRegistrar';
 
 export type Screen = 'splash' | 'signup' | 'login' | 'onboarding' | 'home' | 'tag' | 'profile' | 'settings' | 'forgotpassword' | 'resetpassword';
 
@@ -132,6 +133,7 @@ useEffect(() => {
 
   return (
     <SettingsProvider>
+        <NotificationRegistrar />
     <View style={styles.container}>
       {currentScreen === 'splash' && <SplashScreen onComplete={handleSplashComplete} />}
       {currentScreen === 'signup' && (

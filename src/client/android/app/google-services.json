@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "686272689356",
+    "project_id": "the-groove-20ca3",
+    "storage_bucket": "the-groove-20ca3.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:686272689356:android:0dacaf0bd8df006577fe69",
+        "android_client_info": {
+          "package_name": "com.ailwei.thegroove"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDZ2wEuZFkNHFSN0SKXXwfyC6-OzkdsjK0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

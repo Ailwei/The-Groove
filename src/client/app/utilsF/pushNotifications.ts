@@ -1,51 +1,27 @@
-import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
-import { Platform } from 'react-native';
+import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
+import { Alert, Platform } from 'react-native';
 
-export default async function registerForPush(userId: string) {
-  if (!Constants.isDevice) {
-    console.warn('Must use physical device for push notifications');
-    return null;
-  }
-
+export const registerForPushNotificationsAsync = async () => {
   try {
-    const storedToken = await AsyncStorage.getItem('deviceToken');
-    if (storedToken) return storedToken;
+    const authStatus = await messaging().requestPermission();
+    const enabled =
+      authStatus === messaging.AuthorizationStatus.AUTHORIZED ||
+      authStatus === messaging.AuthorizationStatus.PROVISIONAL;
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+    if (!enabled) {
+      Alert.alert('Permission denied', 'Cannot get notifications permission.');
+      return;
     }
 
-    if (finalStatus !== 'granted') {
-      console.log('Push notification permission denied');
-      return null;
-    }
-
-    const tokenData = await Notifications.getExpoPushTokenAsync();
-    const token = tokenData.data;
-    console.log('Device token:', token);
-
+    const token = await messaging().getToken();
+    console.log("device token", token)
+    console.log('FCM device token:', token);
     await AsyncStorage.setItem('deviceToken', token);
 
-   
-    await axios.post('http://192.168.18.29:3000/api/save-device-token', {
-      userId,
-      deviceToken: token,
-    });
-
-    if (Platform.OS === 'ios') {
-      await Notifications.setNotificationCategoryAsync('default', []);
-    }
-
     return token;
-  } catch (err) {
-    console.error('Error registering push token:', err);
-    return null;
+  } catch (error) {
+    console.log('Error registering for notifications', error);
   }
-}
+};
+export default registerForPushNotificationsAsync

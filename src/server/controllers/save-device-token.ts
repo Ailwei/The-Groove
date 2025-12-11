@@ -1,19 +1,38 @@
-import { Request, Response } from 'express';
-import { db } from '../firebase/firestore';
+import { Request, Response } from "express";
+import { db } from "../firebase/firestore";
 
 export const saveTokenController = async (req: Request, res: Response) => {
-  const { userId, deviceToken } = req.body;
-  if (!userId || !deviceToken) return res.status(400).send('Missing fields');
+  const { userId } = req.params;
+  const { deviceToken } = req.body;
+
+  if (!deviceToken) {
+    return res.status(400).json({ error: "Missing deviceToken" });
+  }
 
   try {
-    await db.collection('users').doc(userId).update({
-      deviceToken,
+    const userRef = db.collection("users").doc(userId);
+    const userDoc = await userRef.get();
+
+    if (!userDoc.exists) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    const userData = userDoc.data();
+    const existingTokens = userData?.deviceTokens || [];
+
+    if (!existingTokens.includes(deviceToken)) {
+      existingTokens.push(deviceToken);
+    }
+
+    await userRef.update({
+      deviceTokens: existingTokens,
+      lastUpdated: new Date(),
     });
-    res.send('Device token saved!');
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Error saving token');
+
+    return res.json({ message: "Device token updated", deviceTokens: existingTokens });
+
+  } catch (error: any) {
+    return res.status(500).json({ error: error.message });
   }
 };
-
-
+export default saveTokenController

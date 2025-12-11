@@ -2,15 +2,13 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
 const JWT_SECRET = process.env.JWT_SECRET || "supersecretkey";
-console.log("JWT_SECRET being used:", JWT_SECRET);
 
 export interface AuthRequest extends Request {
   user?: { userId: string; email: string, username: string };
 }
 
 export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction) => {
-console.log("Incoming Authorization header:", req.headers.authorization);
-console.log("JWT_SECRET being used to verify:", JWT_SECRET);
+
 
   const authHeader = req.headers.authorization;
 

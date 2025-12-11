@@ -37,7 +37,6 @@ export const createUserController = async (req: Request, res: Response) => {
       username,
       email,
       password: hashedPassword,
-      deviceToken: deviceToken || null,
       createdAt: Date.now(),
       settings: {
         locationAccuracy: "high",

@@ -32,7 +32,6 @@ export const loginController = async (req: Request, res: Response) => {
       JWT_SECRET,
       { expiresIn: "7d" }
     );
-console.log("Token generated:", token);
 
     return res.status(200).json({
       message: "Login successful",

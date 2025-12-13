@@ -15,7 +15,6 @@ export const deleteExpiredGrooves = async () => {
     .get();
 
   if (snapshot.empty) {
-    console.log("No expired grooves found.");
     return;
   }
 

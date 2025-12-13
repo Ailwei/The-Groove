@@ -1,38 +1,57 @@
-import { admin } from '../firebase/firestore';
-import { db } from '../firebase/firestore';
-import { getDistanceFromLatLonInM } from './geo';
-interface Groove {
-  coordinates: { lat: number; lng: number };
-  message?: string;
-}
+import { admin, db } from "../firebase/firestore";
+import { getDistanceFromLatLonInM } from "./geo"; 
 
-export const sendNearbyNotifications = async (newGroove: Groove) => {
-  const usersSnapshot = await db.collection('users').get();
+export const sendNearbyNotifications = async (groove: { coordinates: { lat: number; lng: number }, notificationMsg: string }) => {
 
-  usersSnapshot.forEach(userDoc => {
-    const user = userDoc.data();
-    if (!user.deviceToken || !user.location) return;
+  const usersSnapshot = await db.collection("users").get();
+
+  let sentCount = 0;
+
+  for (const doc of usersSnapshot.docs) {
+    const user = doc.data();
+
+    if (!user.deviceTokens || user.deviceTokens.length === 0) {
+      continue;
+    }
+
+    if (!user.location) {
+      continue;
+    }
 
     const distance = getDistanceFromLatLonInM(
-      newGroove.coordinates.lat,
-      newGroove.coordinates.lng,
+      groove.coordinates.lat,
+      groove.coordinates.lng,
       user.location.lat,
       user.location.lng
     );
 
-    if (distance <= 500) {
-      const message = {
-        token: user.deviceToken,
-        notification: {
-          title: '🔥 Groove Nearby!',
-          body: newGroove.message || 'A new groove is heating up near you!',
-        },
-      };
-
-      admin.messaging()
-        .send(message)
-        .then(() => console.log(`Notification sent to ${user.username}`))
-        .catch(err => console.error('FCM error:', err));
+    const RADIUS_METERS = 5000;
+    if (distance > RADIUS_METERS) {
+      continue;
     }
-  });
+
+    for (const token of user.deviceTokens) {
+      console.log("token", token)
+      try {
+        await admin.messaging().send({
+          token,
+          notification: {
+            title: "🔥 New Groove Nearby!",
+            body: groove.notificationMsg,
+          },
+          android: {
+            priority: "high",
+            notification: {
+              channelId: "default",
+              sound: "default",
+            },
+          },
+        });
+        sentCount++;
+      } catch (err) {
+        console.error(`FCM error for ${user.username}`, err);
+      }
+    }
+  }
+  return sentCount;
 };

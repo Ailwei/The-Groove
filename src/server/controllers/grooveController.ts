@@ -2,7 +2,7 @@ import { Response } from "express";
 import admin from "firebase-admin";
 import { db } from "../firebase/firestore";
 import { getDistanceFromLatLonInM } from "../utils/geo";
-import { sendNearbyNotifications, Groove } from "../utils/sendNotifications";
+import { sendNearbyNotifications } from "../utils/notify";
 import axios from "axios";
 import { AuthRequest } from "../middleWare/middleWare";
 
@@ -102,7 +102,6 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
       const grooveRef = db.collection("grooves").doc(existingGroove.id);
       const totalSupports = await addSupporter(grooveRef, userId, username);
       const isImportant = await updateGrooveImportance(grooveRef);
-      sendNearbyNotifications({ ...existingGroove, isImportant });
 
       return res.status(200).json({
         message: "Groove already exists — support added",
@@ -127,16 +126,13 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
     };
 
     const docRef = await db.collection("grooves").add(newGroove);
-
     const isImportant = await updateGrooveImportance(docRef);
-    sendNearbyNotifications({ ...newGroove, isImportant });
+    const notificationText = `${username} tagged a new groove: ${message || "Check it out!"}`;
 
-    return res.status(201).json({
-      message: "Groove tagged successfully",
-      grooveId: docRef.id,
-      totalSupports: 1,
-      isImportant
-    });
+await sendNearbyNotifications({
+  coordinates: { lat, lng },
+  notificationMsg: notificationText,
+});
 
   } catch (error: any) {
     console.error("tagGrooveController error:", error);
@@ -187,7 +183,7 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
     const totalSupports = await addSupporter(grooveRef, userId, username);
     const isImportant = await updateGrooveImportance(grooveRef);
 
-   const grooveForNotification: Groove = {
+   const grooveForNotification = {
   coordinates: {
     lat: grooveData.coordinates.lat,
     lng: grooveData.coordinates.lng,
@@ -196,7 +192,7 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
   isImportant: isImportant,
 };
 
-sendNearbyNotifications(grooveForNotification);
+// sendNearbyNotifications(grooveForNotification);
 
 
     return res.status(200).json({

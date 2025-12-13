@@ -1,17 +1,14 @@
-import { useState, useContext,useEffect ,  useRef} from 'react';
-import { Plus, Menu } from 'lucide-react-native';
-import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { GrooveTag } from '..';
-import { GrooveDetailsPopup } from './GrooveDetailsPopup';
-import Toast from 'react-native-toast-message';
-import { Provider, Menu as PaperMenu } from 'react-native-paper';
-import { SafeAreaView ,  useSafeAreaInsets} from 'react-native-safe-area-context';
-import MapView, { Marker} from 'react-native-maps';
 import * as Location from 'expo-location';
-import React from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Menu, Plus } from 'lucide-react-native';
+import React, { useContext, useEffect, useRef, useState } from 'react';
+import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MapView, { Marker } from 'react-native-maps';
+import { Menu as PaperMenu, Provider } from 'react-native-paper';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import { GrooveTag } from '..';
 import SettingsContext from '../contecxt/settingContext';
-import axios from 'axios';
+import { GrooveDetailsPopup } from './GrooveDetailsPopup';
 
 
 interface HomeScreenProps {

@@ -1,13 +1,13 @@
-import { ArrowLeft, MapPin, MessageSquare } from 'lucide-react-native';
-import React, { useState, useEffect } from 'react';
-import { Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { GrooveTag } from '..';
-import Toast from 'react-native-toast-message';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from "axios";
 import * as Location from "expo-location";
-import DateTimePicker from '@react-native-community/datetimepicker';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ArrowLeft, MapPin, MessageSquare } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import { GrooveTag } from '..';
 
 interface TagGrooveScreenProps {
   onBack: () => void;

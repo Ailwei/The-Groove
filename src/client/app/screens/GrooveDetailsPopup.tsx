@@ -1,13 +1,13 @@
-import { Navigation, X } from 'lucide-react-native';
-import React , {useState, useEffect}from 'react';
-import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { GrooveTag } from '..';
-import { SafeAreaView,  useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import Toast from 'react-native-toast-message';
 import axios from 'axios';
+import { jwtDecode } from "jwt-decode";
+import { Navigation, X } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import { Linking, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import Toast from 'react-native-toast-message';
+import { GrooveTag } from '..';
 import ReportModal from '../componet/reportModal';
-import {jwtDecode} from "jwt-decode";
 
 
 interface GrooveDetailsPopupProps {

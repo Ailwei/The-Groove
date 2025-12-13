@@ -1,10 +1,10 @@
-import React from 'react';
-import { ArrowLeft, MapPin, Settings } from 'lucide-react-native';
-import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
-import { GrooveTag } from '..';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import { ArrowLeft, MapPin, Settings } from 'lucide-react-native';
+import React from 'react';
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { GrooveTag } from '..';
 
 interface ProfileScreenProps {
   onBack: () => void;

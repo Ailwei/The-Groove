@@ -1,20 +1,36 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 import { useEffect, useState } from 'react';
-import { StyleSheet, View, ActivityIndicator } from 'react-native';
+import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import Toast from 'react-native-toast-message';
+import NotificationRegistrar from './componet/NotificationRegistrar';
+import { SettingsProvider } from './contecxt/settingContext';
+import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
 import { HomeScreen } from './screens/HomeScreen';
+import { LoginScreen } from './screens/LoginScreen';
 import { OnboardingScreens } from './screens/OnboardingScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
+import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import { SettingsScreen } from './screens/SettingsScreen';
+import { SignupScreen } from './screens/SignUp';
 import { SplashScreen } from './screens/SplashScreen';
 import { TagGrooveScreen } from './screens/TagGrooveScreen';
-import { SignupScreen } from './screens/SignUp';
-import { LoginScreen } from './screens/LoginScreen';
-import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
-import ResetPasswordScreen from './screens/ResetPasswordScreen';
-import SettingsContext, { SettingsProvider } from './contecxt/settingContext';
-import axios from 'axios';
-import NotificationRegistrar from './componet/NotificationRegistrar';
+import * as Notifications from 'expo-notifications';
+
+
+
+
+Notifications.setNotificationHandler({
+  handleNotification: async () => ({
+    shouldShowAlert: true,
+    shouldPlaySound: true,
+    shouldShowSound: true,
+    shouldSetBadge: false,
+    shouldShowBanner: true,
+    shouldShowList: true,
+  }),
+});
+
 
 export type Screen = 'splash' | 'signup' | 'login' | 'onboarding' | 'home' | 'tag' | 'profile' | 'settings' | 'forgotpassword' | 'resetpassword';
 
@@ -30,6 +46,7 @@ export interface GrooveTag {
   supportCount?: number;
 }
 
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
@@ -37,8 +54,7 @@ export default function App() {
   const [selectedGroove, setSelectedGroove] = useState<GrooveTag | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
-  const [support, setSupport] = useState ([])
-const [resetEmail, setResetEmail] = useState<string | null>(null);
+  const [resetEmail, setResetEmail] = useState<string | null>(null);
 
   useEffect(() => {
     const initApp = async () => {

@@ -2,7 +2,7 @@ import { Response } from "express";
 import admin from "firebase-admin";
 import { db } from "../firebase/firestore";
 import { getDistanceFromLatLonInM } from "../utils/geo";
-import { sendNearbyNotifications } from "../utils/notify";
+import { sendNearbyNotifications, sendSupportedGroovesNotifications, notifyOwnerOnSupport } from "../utils/notify";
 import axios from "axios";
 import { AuthRequest } from "../middleWare/middleWare";
 
@@ -16,24 +16,26 @@ async function addSupporter(
   username: string
 ) {
   const doc = await grooveRef.get();
-  if (!doc.exists) return null;
+  if (!doc.exists) return 0;
 
   const grooveData = doc.data();
-  if (!grooveData) return null;
+  if (!grooveData) return 0;
 
+  const ownerId = grooveData.userId;
 
-  if (grooveData.userId === userId) return null;
-
-  if (grooveData.userId === userId) {
-    return null;
-  }
+  if (ownerId === userId) return 0;
 
   await grooveRef.update({
     supporters: admin.firestore.FieldValue.arrayUnion({ userId, username }),
   });
 
   const updatedDoc = await grooveRef.get();
-  return updatedDoc.data()?.supporters?.length || 0;
+  const updatedData = updatedDoc.data();
+  if (!updatedData) return 0;
+
+  return (updatedData.supporters || [])
+    .filter((s: any) => s.userId !== ownerId)
+    .length;
 }
 
 async function updateGrooveImportance(grooveRef: FirebaseFirestore.DocumentReference) {
@@ -43,7 +45,10 @@ async function updateGrooveImportance(grooveRef: FirebaseFirestore.DocumentRefer
   const grooveData = doc.data();
   if (!grooveData) return;
 
-  const supporterCount = grooveData.supporters?.length || 0;
+  const supporterCount = (grooveData.supporters || [])
+    .filter((s: any) => s.userId !== grooveData.userId)
+    .length
+
   let isImportant = false;
 
   if (supporterCount >= CRITICAL_SUPPORT_THRESHOLD) isImportant = true;
@@ -121,7 +126,7 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
       createdAt: admin.firestore.Timestamp.now(),
       startAt: startAtTimestamp,
       expiresAt: expiresAtTimestamp,
-      supporters: [{ userId, username }],
+      supporters: [],
       isImportant: false,
     };
 
@@ -129,10 +134,10 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
     const isImportant = await updateGrooveImportance(docRef);
     const notificationText = `${username} tagged a new groove: ${message || "Check it out!"}`;
 
-await sendNearbyNotifications({
-  coordinates: { lat, lng },
-  notificationMsg: notificationText,
-});
+    await sendNearbyNotifications({
+      coordinates: { lat, lng },
+      notificationMsg: notificationText,
+    });
 
   } catch (error: any) {
     console.error("tagGrooveController error:", error);
@@ -146,7 +151,18 @@ export const getGroovesController = async (_req: any, res: Response) => {
     const snapshot = await db.collection("grooves").where("expiresAt", ">", now).get();
 
     const grooves: any[] = [];
-    snapshot.forEach(doc => grooves.push({ id: doc.id, ...doc.data() }));
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      const supportCount = (data.supporters || [])
+        .filter((s: any) => s.userId !== data.userId)
+        .length;
+
+      grooves.push({
+        id: doc.id,
+        ...data,
+        supportCount,
+      });
+    });
 
     return res.status(200).json({ grooves });
   } catch (error: any) {
@@ -169,6 +185,7 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
 
     if (!grooveDoc.exists) return res.status(404).json({ error: "Groove not found" });
     const grooveData = grooveDoc.data();
+    console.log(grooveData)
     if (!grooveData) return res.status(500).json({ error: "Invalid groove data" });
 
     const distance = getDistanceFromLatLonInM(userLat, userLng, grooveData.coordinates.lat, grooveData.coordinates.lng);
@@ -181,18 +198,26 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
     if (alreadySupported) return res.status(400).json({ error: "Already supported" });
 
     const totalSupports = await addSupporter(grooveRef, userId, username);
+
     const isImportant = await updateGrooveImportance(grooveRef);
 
-   const grooveForNotification = {
-  coordinates: {
-    lat: grooveData.coordinates.lat,
-    lng: grooveData.coordinates.lng,
-  },
-  message: grooveData.message,
-  isImportant: isImportant,
-};
+    await notifyOwnerOnSupport(grooveId, grooveData.userId, username);
 
-// sendNearbyNotifications(grooveForNotification);
+
+    const grooveForNotification = {
+      coordinates: {
+        lat: grooveData.coordinates.lat,
+        lng: grooveData.coordinates.lng,
+      },
+      message: grooveData.message,
+      isImportant: isImportant,
+    };
+
+    await sendSupportedGroovesNotifications({
+      grooveId,
+      ownerId: grooveData.userId,
+      supportCount: totalSupports,
+    });
 
 
     return res.status(200).json({
@@ -229,7 +254,9 @@ export const getUserGroovesController = async (req: AuthRequest, res: Response) 
         startTime: data.startAt ? data.startAt.toDate() : null,
         endTime: data.expiresAt ? data.expiresAt.toDate() : null,
 
-        supportCount: data.supporters?.length || 0,
+        supportCount: (data.supporters || [])
+          .filter((s: any) => s.userId !== data.userId)
+          .length,
       };
     });
 

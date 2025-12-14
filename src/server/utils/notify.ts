@@ -1,5 +1,14 @@
+import { request } from "http";
 import { admin, db } from "../firebase/firestore";
-import { getDistanceFromLatLonInM } from "./geo"; 
+import { getDistanceFromLatLonInM } from "./geo";
+
+type SupportedGroovePayload = {
+  grooveId: string;
+  ownerId: string;
+  supportCount: number;
+};
+
+const SUPPORT_MILESTONES = [3, 10, 25, 50, 100];
 
 export const sendNearbyNotifications = async (groove: { coordinates: { lat: number; lng: number }, notificationMsg: string }) => {
 
@@ -31,7 +40,6 @@ export const sendNearbyNotifications = async (groove: { coordinates: { lat: numb
     }
 
     for (const token of user.deviceTokens) {
-      console.log("token", token)
       try {
         await admin.messaging().send({
           token,
@@ -53,5 +61,92 @@ export const sendNearbyNotifications = async (groove: { coordinates: { lat: numb
       }
     }
   }
+  return sentCount;
+};
+
+export const sendSupportedGroovesNotifications = async (
+  payload: SupportedGroovePayload & { message?: string }
+) => {
+  const { supportCount, ownerId, message } = payload;
+
+  console.log("sendSupportedGroovesNotifications called with:", payload);
+
+  if (!SUPPORT_MILESTONES.includes(supportCount)) {
+    return 0;
+  }
+
+  const ownerDoc = await db.collection("users").doc(ownerId).get();
+  if (!ownerDoc.exists) {
+    return 0;
+  }
+
+  const owner = ownerDoc.data();
+  if (!owner?.deviceTokens?.length) {
+    return 0;
+  }
+
+  let sentCount = 0;
+
+  for (const token of owner.deviceTokens) {
+    try {
+      await admin.messaging().send({
+        token,
+        notification: {
+          title: "🔥 Your Groove Is Gaining Support!",
+          body: message
+            ? `"${message}" has reached ${supportCount} supporters!`
+            : `Your groove has reached ${supportCount} supporters!`,
+        },
+        android: {
+          priority: "high",
+          notification: {
+            channelId: "default",
+            sound: "default",
+          },
+        },
+      });
+      sentCount++;
+    } catch (err) {
+      console.error(`FCM error sending notification to token ${token}:`, err);
+    }
+  }
+  return sentCount;
+};
+
+export const notifyOwnerOnSupport = async (
+  grooveId: string,
+  ownerId: string,
+  supporterUsername: string
+) => {
+  const ownerDoc = await db.collection("users").doc(ownerId).get();
+  if (!ownerDoc.exists) return 0;
+
+  const owner = ownerDoc.data();
+  if (!owner?.deviceTokens?.length) return 0;
+
+  let sentCount = 0;
+
+  for (const token of owner.deviceTokens) {
+    try {
+      await admin.messaging().send({
+        token,
+        notification: {
+          title: "🔥 Someone supported your Groove!",
+          body: `${supporterUsername} just supported your groove.`,
+        },
+        android: {
+          priority: "high",
+          notification: {
+            channelId: "default",
+            sound: "default",
+          },
+        },
+      });
+      sentCount++;
+    } catch (err) {
+      console.error(`FCM error sending support notification to owner`, err);
+    }
+  }
+
   return sentCount;
 };

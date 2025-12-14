@@ -42,45 +42,45 @@ export function HomeScreen({
   const { highAccuracy } = useContext(SettingsContext);
 
 
-   useEffect(() => {
-  (async () => {
+  useEffect(() => {
+    (async () => {
 
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.warn("Location permission denied");
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          console.warn("Location permission denied");
+          setIsLocationLoading(false);
+          return;
+        }
+
+        const location = await Location.getCurrentPositionAsync({
+          accuracy: highAccuracy ? Location.Accuracy.Highest : Location.Accuracy.Balanced,
+        });
+
+        setUserLocation({
+          lat: location.coords.latitude,
+          lng: location.coords.longitude,
+        });
+
+        setMapRegion({
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.45,
+          longitudeDelta: 0.45,
+        });
+      } catch (err) {
+        console.warn("Error fetching location", err);
+      } finally {
         setIsLocationLoading(false);
-        return;
       }
+    })();
+  }, [highAccuracy]);
 
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: highAccuracy ? Location.Accuracy.Highest : Location.Accuracy.Balanced,
-      });
-
-      setUserLocation({
-        lat: location.coords.latitude,
-        lng: location.coords.longitude,
-      });
-
-      setMapRegion({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        latitudeDelta: 0.45,
-        longitudeDelta: 0.45,
-      });
-    } catch (err) {
-      console.warn("Error fetching location", err);
-    } finally {
-      setIsLocationLoading(false);
-    }
-  })();
-}, [highAccuracy]);
-
-const getSortedGrooves = () => {
-  const now = new Date();
-  return grooveTags.filter(tag => now >= tag.startTime && now <= tag.endTime);
-};
-const sortedGrooves = getSortedGrooves();
+  const getSortedGrooves = () => {
+    const now = new Date();
+    return grooveTags.filter(tag => now >= tag.startTime && now <= tag.endTime);
+  };
+  const sortedGrooves = getSortedGrooves();
 
   const getVibeColor = (vibe: GrooveTag['vibe']) => {
     switch (vibe) {
@@ -93,11 +93,11 @@ const sortedGrooves = getSortedGrooves();
 
   const insets = useSafeAreaInsets();
 
-const ProfileAnchor = (
-  <TouchableOpacity onPress={() => setProfileMenuVisible(prev => !prev)} style={{ padding: 8, marginLeft: 12 }}>
-    <Menu size={24} color="black" />
-  </TouchableOpacity>
-);
+  const ProfileAnchor = (
+    <TouchableOpacity onPress={() => setProfileMenuVisible(prev => !prev)} style={{ padding: 8, marginLeft: 12 }}>
+      <Menu size={24} color="black" />
+    </TouchableOpacity>
+  );
 
   return (
     <Provider>
@@ -107,16 +107,16 @@ const ProfileAnchor = (
           <Text style={styles.title}>THE GROOOOOVE</Text>
           <View style={styles.headerButtons}>
             <View style={{ flexDirection: 'row' }}>
-  
-  <PaperMenu
-    visible={profileMenuVisible}
-    onDismiss={() => setProfileMenuVisible(false)}
-     anchor={ProfileAnchor}
-  >
-    <PaperMenu.Item onPress={onNavigateToProfile} title="Profile" />
-    <PaperMenu.Item onPress={onNavigateToSettings} title="Settings" />
-  </PaperMenu>
-</View>
+
+              <PaperMenu
+                visible={profileMenuVisible}
+                onDismiss={() => setProfileMenuVisible(false)}
+                anchor={ProfileAnchor}
+              >
+                <PaperMenu.Item onPress={onNavigateToProfile} title="Profile" />
+                <PaperMenu.Item onPress={onNavigateToSettings} title="Settings" />
+              </PaperMenu>
+            </View>
 
           </View>
         </View>
@@ -141,102 +141,103 @@ const ProfileAnchor = (
             <Text style={styles.legendText}>Quiet</Text>
           </View>
         </View>
-{isLocationLoading ? (
-  <View style={styles.initialLoader}>
-    <Text style={styles.initialLoaderText}>Finding your location…</Text>
-  </View>
-) : (
-  <>
-    <MapView
-  ref={mapRef}
-  style={styles.mapArea}
-  showsUserLocation={true}
-  showsMyLocationButton={true}
-  initialRegion={{
-    latitude: userLocation!.lat,
-    longitude: userLocation!.lng,
-    latitudeDelta: 0.05,
-    longitudeDelta: 0.05,
-  }}
-  onMapReady={() => setIsMapReady(true)}
->
-  {(sortedGrooves).map(tag => (
-    <React.Fragment key={tag.id}>
-      <Marker
-        coordinate={{
-          latitude: tag.coordinates.lat,
-          longitude: tag.coordinates.lng,
-        }}
-        title={tag.location || 'Groove'}
-        description={tag.message}
-        pinColor={getVibeColor(tag.vibe)}
-        onPress={() => onSelectGroove(tag)}
-      />
+        {isLocationLoading ? (
+          <View style={styles.initialLoader}>
+            <Text style={styles.initialLoaderText}>Finding your location…</Text>
+          </View>
+        ) : (
+          <>
+            <MapView
+              ref={mapRef}
+              style={styles.mapArea}
+              showsUserLocation={true}
+              showsMyLocationButton={true}
+              initialRegion={{
+                latitude: userLocation!.lat,
+                longitude: userLocation!.lng,
+                latitudeDelta: 0.05,
+                longitudeDelta: 0.05,
+              }}
+              onMapReady={() => setIsMapReady(true)}
+            >
+              {(sortedGrooves).map(tag => (
+                <React.Fragment key={tag.id}>
+                  <Marker
+                    coordinate={{
+                      latitude: tag.coordinates.lat,
+                      longitude: tag.coordinates.lng,
+                    }}
+                    title={tag.location || 'Groove'}
+                    description={tag.message}
+                    pinColor={getVibeColor(tag.vibe)}
+                    onPress={() => onSelectGroove(tag)}
+                  />
 
-      <Marker
-        coordinate={{
-          latitude: tag.coordinates.lat,
-          longitude: tag.coordinates.lng,
-        }}
-        anchor={{ x: 0.5, y: 1 }}
-        tracksViewChanges={true}
-        zIndex={10}
-      >
-        <View style={{
-          backgroundColor: 'rgba(0,0,0,0.8)',
-          paddingHorizontal: 8,
-          paddingVertical: 4,
-          borderRadius: 12,
-          minWidth: 28,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}>
-          <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
-  +{Math.max((tag.supportCount ?? 0) - 1, 0)}
-</Text>
-
-        </View>
-      </Marker>
-    </React.Fragment>
-  ))}
-</MapView>
-
-  
-
-  {(!isMapReady || isLocationLoading) && (
-  <View style={styles.mapLoadingOverlay}>
-    <Text style={styles.loadingText}>Loading map…</Text>
-  </View>
-)}
+                  <Marker
+                    coordinate={{
+                      latitude: tag.coordinates.lat,
+                      longitude: tag.coordinates.lng,
+                    }}
+                    anchor={{ x: 0.5, y: 1 }}
+                    tracksViewChanges={true}
+                    zIndex={10}
+                  >
+                    <View style={{
+                      backgroundColor: 'rgba(0,0,0,0.8)',
+                      paddingHorizontal: 8,
+                      paddingVertical: 4,
+                      borderRadius: 12,
+                      minWidth: 28,
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                    }}>
+                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>
+                        +{tag.supportCount ?? 0}
+                      </Text>
 
 
-        <TouchableOpacity  style={[
-        styles.tagButton,
-        { bottom: 5 + insets.bottom }
-      ]}  onPress={onNavigateToTag}>
-          <Plus size={16} color="#fff" />
-          <Text style={styles.tagButtonText}>Tag My Groove</Text>
-        </TouchableOpacity>
-        {selectedGroove && (
-<GrooveDetailsPopup 
-    groove={selectedGroove}
-    onClose={() => onSelectGroove(null)}
-    userLocation={userLocation}
-    onSupport={(id) => {
-        setGrooves(prev => 
-            prev.map(g =>
-                g.id === id 
-                    ? { ...g, supportCount: (g.supportCount ?? 0) + 1 }
-                    : g
-            )
-        );
-    }}
-/>
+                    </View>
+                  </Marker>
+                </React.Fragment>
+              ))}
+            </MapView>
+
+
+
+            {(!isMapReady || isLocationLoading) && (
+              <View style={styles.mapLoadingOverlay}>
+                <Text style={styles.loadingText}>Loading map…</Text>
+              </View>
+            )}
+
+
+            <TouchableOpacity style={[
+              styles.tagButton,
+              { bottom: 5 + insets.bottom }
+            ]} onPress={onNavigateToTag}>
+              <Plus size={16} color="#fff" />
+              <Text style={styles.tagButtonText}>Tag My Groove</Text>
+            </TouchableOpacity>
+            {selectedGroove && (
+              <GrooveDetailsPopup
+                groove={selectedGroove}
+                onClose={() => onSelectGroove(null)}
+                userLocation={userLocation}
+                onSupport={(id) => {
+                  setGrooves(prev =>
+                    prev.map(g =>
+                      g.id === id
+                        ? { ...g, supportCount: (g.supportCount ?? 0) + 1 }
+                        : g
+                    )
+                  );
+                }}
+              />
+            )}
+
+            <Toast />
+          </>
         )}
-
-        <Toast />
-  </>
-)}
       </SafeAreaView>
     </Provider>
   );
@@ -254,16 +255,16 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   loadingOverlay: {
-  position: 'absolute',
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: 'rgba(255,255,255,0.7)',
-  zIndex: 100,
-},
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.7)',
+    zIndex: 100,
+  },
 
   title: { fontSize: 20, fontWeight: 'bold' },
   headerButtons: { flexDirection: 'row', gap: 12 },
@@ -303,34 +304,34 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   mapLoadingOverlay: {
-  position: "absolute",
-  top: 0,
-  left: 0,
-  right: 0,
-  bottom: 0,
-  justifyContent: "center",
-  alignItems: "center",
-  backgroundColor: "rgba(255,255,255,0.9)",
-  zIndex: 200,
-},
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.9)",
+    zIndex: 200,
+  },
 
-loadingText: {
-  fontSize: 16,
-  fontWeight: "600",
-  color: "#555",
-},
-initialLoader: {
-  flex: 1,
-  justifyContent: 'center',
-  alignItems: 'center',
-  backgroundColor: '#f1f5f9',
-},
+  loadingText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#555",
+  },
+  initialLoader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f1f5f9',
+  },
 
-initialLoaderText: {
-  fontSize: 16,
-  color: '#444',
-  fontWeight: '600',
-},
+  initialLoaderText: {
+    fontSize: 16,
+    color: '#444',
+    fontWeight: '600',
+  },
 
 
 

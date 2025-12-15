@@ -108,52 +108,35 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
       }
     })();
   }, []);
+const { reloadSettings } = useContext(SettingsContext);
 
+useEffect(() => {
+  reloadSettings();
+}, []);
 
-  useEffect(() => {
-    const loadNotificationSettings = async () => {
-      const notif = await AsyncStorage.getItem('notificationsEnabled');
-      const freq = await AsyncStorage.getItem('notificationFrequency');
-      if (notif !== null) setNotificationsEnabled(notif === 'true');
-      if (freq) setNotificationFrequency(freq as 'all' | 'important' | 'off');
-    };
-    loadNotificationSettings();
-  }, []);
 
   const updateSettings = async (newSettings: {
-    highAccuracy?: boolean;
-    notificationsEnabled?: boolean;
-    notificationFrequency?: 'all' | 'important' | 'off';
-  }) => {
-    try {
-      const userId = await AsyncStorage.getItem('userId');
-      if (!userId) return;
+  highAccuracy?: boolean;
+  notificationsEnabled?: boolean;
+  notificationFrequency?: 'all' | 'groove' | 'important' | 'owner';
+}) => {
+  try {
+    const userId = await AsyncStorage.getItem('userId');
+    const token = await AsyncStorage.getItem('token');
+    if (!userId || !token) return;
 
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
+    await axios.patch(
+      `http://192.168.18.29:3000/api/updateSettings/${userId}`,
+      newSettings,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-   await axios.patch(
-  `http://192.168.18.29:3000/api/updateSettings/${userId}`,
-  newSettings,
-  { headers: { Authorization: `Bearer ${token}` } }
-);
-
-
-
-
-      if (newSettings.notificationsEnabled !== undefined) {
-        await AsyncStorage.setItem('notificationsEnabled', newSettings.notificationsEnabled.toString());
-      }
-      if (newSettings.notificationFrequency) {
-        await AsyncStorage.setItem('notificationFrequency', newSettings.notificationFrequency);
-      }
-
-      Toast.show({ type: 'success', text1: 'Settings updated' });
-    } catch (err) {
-      console.log(err);
-      Toast.show({ type: 'error', text1: 'Failed to update settings' });
-    }
-  };
+    Toast.show({ type: 'success', text1: 'Settings updated' });
+  } catch (err) {
+    console.log(err);
+    Toast.show({ type: 'error', text1: 'Failed to update settings' });
+  }
+};
 
   return (
     <SafeAreaView style={styles.container}>
@@ -210,7 +193,7 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
 
           {notificationsEnabled && (
             <View style={{ marginTop: 12 }}>
-              {(['all', 'important', 'off'] as const).map((freq) => (
+              {(['all', 'groove','important', 'owner'] as const).map((freq) => (
                 <TouchableOpacity
                   key={freq}
                   style={[
@@ -223,16 +206,25 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
                   }}
 
                 >
-                  <Text style={styles.freqTitle}>
-                    {freq === 'all' ? 'All Grooves' : freq === 'important' ? 'Important Only' : 'Minimal'}
-                  </Text>
-                  <Text style={styles.description}>
-                    {freq === 'all'
-                      ? 'Get notified for every new groove nearby'
-                      : freq === 'important'
-                        ? 'Only notify for very busy spots'
-                        : 'Only critical notifications'}
-                  </Text>
+                 <Text style={styles.freqTitle}>
+  {freq === 'all'
+    ? 'All Notifications'
+    : freq === 'important'
+      ? 'Milestones Only'
+      : freq === 'groove'
+        ? 'Grooves Nearby'
+        : 'Support Only'}
+</Text>
+<Text style={styles.description}>
+  {freq === 'all'
+    ? 'Receive all notifications'
+    : freq === 'important'
+      ? 'Only notify for milestones reached'
+      : freq === 'groove'
+        ? 'Get notified for every new groove nearby'
+        : 'Only notifications when someone supports your groove'}
+</Text>
+
                 </TouchableOpacity>
               ))}
             </View>

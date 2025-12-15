@@ -8,19 +8,22 @@ interface SettingsContextType {
   notificationsEnabled: boolean;
   setNotificationsEnabled: (value: boolean) => void;
 
-  notificationFrequency: 'all' | 'important' | 'off';
-  setNotificationFrequency: (value: 'all' | 'important' | 'off') => void;
+  notificationFrequency: 'all' | 'groove' | 'important' | 'owner';
+  setNotificationFrequency: (value: 'all' | 'groove' | 'important' | 'owner') => void;
+
+  reloadSettings: () => Promise<void>;
+  resetSettings: () => void;
 }
 
 const SettingsContext = createContext<SettingsContextType>({
-  highAccuracy: false,
+  highAccuracy: true,
   setHighAccuracy: () => {},
-
-  notificationsEnabled: false,
+  notificationsEnabled: true,
   setNotificationsEnabled: () => {},
-
-  notificationFrequency: "all",
+  notificationFrequency: 'all',
   setNotificationFrequency: () => {},
+  reloadSettings: async () => {},
+  resetSettings: () => {},
 });
 
 interface SettingsProviderProps {
@@ -30,46 +33,76 @@ interface SettingsProviderProps {
 export const SettingsProvider = ({ children }: SettingsProviderProps) => {
   const [highAccuracy, setHighAccuracyState] = useState(true);
   const [notificationsEnabled, setNotificationsEnabledState] = useState(true);
-  const [notificationFrequency, setNotificationFrequencyState] = useState<'all' | 'important' | 'off'>("all");
+  const [notificationFrequency, setNotificationFrequencyState] =
+    useState<'all' | 'groove' | 'important' | 'owner'>('all');
 
- 
-  useEffect(() => {
-    (async () => {
-      const savedHighAcc = await AsyncStorage.getItem('highAccuracy');
-      if (savedHighAcc !== null) setHighAccuracyState(savedHighAcc === 'true');
+  const getUserId = async (): Promise<string | null> => {
+    return AsyncStorage.getItem('userId');
+  };
 
-      const savedNotif = await AsyncStorage.getItem('notificationsEnabled');
-      if (savedNotif !== null) setNotificationsEnabledState(savedNotif === 'true');
+  const storageKey = (key: string, userId: string) => `${key}:${userId}`;
 
-      const savedFreq = await AsyncStorage.getItem('notificationFrequency');
-      if (savedFreq !== null) setNotificationFrequencyState(savedFreq as 'all' | 'important' | 'off');
-    })();
-  }, []);
+  const loadSettings = async () => {
+    const userId = await getUserId();
+    if (!userId) return;
+
+    const savedHighAcc = await AsyncStorage.getItem(storageKey('highAccuracy', userId));
+    if (savedHighAcc !== null) setHighAccuracyState(savedHighAcc === 'true');
+
+
+    const savedNotif = await AsyncStorage.getItem(storageKey('notificationsEnabled', userId));
+    if (savedNotif !== null) setNotificationsEnabledState(savedNotif === 'true');
+
+    const savedFreq = await AsyncStorage.getItem(storageKey('notificationFrequency', userId));
+    if (savedFreq !== null)
+      setNotificationFrequencyState(savedFreq as 'all' | 'groove' | 'important' | 'owner');
+  };
+  
 
   const setHighAccuracy = async (value: boolean) => {
     setHighAccuracyState(value);
-    await AsyncStorage.setItem('highAccuracy', value ? 'true' : 'false');
+    const userId = await getUserId();
+    if (!userId) return;
+    await AsyncStorage.setItem(storageKey('highAccuracy', userId), value ? 'true' : 'false');
   };
 
   const setNotificationsEnabled = async (value: boolean) => {
     setNotificationsEnabledState(value);
-    await AsyncStorage.setItem('notificationsEnabled', value ? 'true' : 'false');
+    const userId = await getUserId();
+    if (!userId) return;
+    await AsyncStorage.setItem(storageKey('notificationsEnabled', userId), value ? 'true' : 'false');
   };
 
-  const setNotificationFrequency = async (value: 'all' | 'important' | 'off') => {
+  const setNotificationFrequency = async (value: 'all' | 'groove' | 'important' | 'owner') => {
     setNotificationFrequencyState(value);
-    await AsyncStorage.setItem('notificationFrequency', value);
+    const userId = await getUserId();
+    if (!userId) return;
+    await AsyncStorage.setItem(storageKey('notificationFrequency', userId), value);
   };
+
+  const resetSettings = () => {
+    setHighAccuracyState(true);
+    setNotificationsEnabledState(true);
+    setNotificationFrequencyState('all');
+  };
+
+  useEffect(() => {
+    loadSettings();
+  }, []);
 
   return (
-    <SettingsContext.Provider value={{
-      highAccuracy,
-      setHighAccuracy,
-      notificationsEnabled,
-      setNotificationsEnabled,
-      notificationFrequency,
-      setNotificationFrequency,
-    }}>
+    <SettingsContext.Provider
+      value={{
+        highAccuracy,
+        setHighAccuracy,
+        notificationsEnabled,
+        setNotificationsEnabled,
+        notificationFrequency,
+        setNotificationFrequency,
+        reloadSettings: loadSettings,
+        resetSettings,
+      }}
+    >
       {children}
     </SettingsContext.Provider>
   );

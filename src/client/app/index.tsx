@@ -79,6 +79,7 @@ useEffect(() => {
   const fetchGrooves = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
+       if (!token) return;
       const res = await axios.get('http://192.168.18.29:3000/api/grooves', {
         headers: { Authorization: `Bearer ${token}` },
       });

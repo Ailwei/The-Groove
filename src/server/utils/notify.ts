@@ -1,4 +1,3 @@
-import { request } from "http";
 import { admin, db } from "../firebase/firestore";
 import { getDistanceFromLatLonInM } from "./geo";
 
@@ -9,6 +8,33 @@ type SupportedGroovePayload = {
 };
 
 const SUPPORT_MILESTONES = [3, 10, 25, 50, 100];
+
+
+type NotificationFrequency = 'all' | 'important' | 'owner' | 'groove';
+
+async function canNotifyUser(
+  user: any,
+  type: 'all' | 'important' | 'owner' | 'groove' = 'all'
+) {
+  if (!user?.deviceTokens?.length) return false;
+  if (!user.settings?.notificationsEnabled) return false;
+
+  const freq: NotificationFrequency = user.settings?.notificationFrequency || 'all';
+
+  switch (type) {
+    case 'all':
+      return freq === 'all';
+    case 'important':
+      return freq === 'all' || freq === 'important';
+    case 'owner':
+      return freq === 'all' || freq === 'owner';
+    case 'groove':
+      return freq === 'all' || freq === 'groove';
+    default:
+      return false;
+  }
+}
+
 
 export const sendNearbyNotifications = async (groove: { coordinates: { lat: number; lng: number }, notificationMsg: string }) => {
 
@@ -38,6 +64,8 @@ export const sendNearbyNotifications = async (groove: { coordinates: { lat: numb
     if (distance > RADIUS_METERS) {
       continue;
     }
+    
+    if (!(await canNotifyUser(user, 'all'))) continue;
 
     for (const token of user.deviceTokens) {
       try {
@@ -69,8 +97,6 @@ export const sendSupportedGroovesNotifications = async (
 ) => {
   const { supportCount, ownerId, message } = payload;
 
-  console.log("sendSupportedGroovesNotifications called with:", payload);
-
   if (!SUPPORT_MILESTONES.includes(supportCount)) {
     return 0;
   }
@@ -81,6 +107,8 @@ export const sendSupportedGroovesNotifications = async (
   }
 
   const owner = ownerDoc.data();
+  if (!(await canNotifyUser(owner, 'important'))) return 0;
+
   if (!owner?.deviceTokens?.length) {
     return 0;
   }
@@ -122,6 +150,8 @@ export const notifyOwnerOnSupport = async (
   if (!ownerDoc.exists) return 0;
 
   const owner = ownerDoc.data();
+  if (!(await canNotifyUser(owner, 'important'))) return 0;
+
   if (!owner?.deviceTokens?.length) return 0;
 
   let sentCount = 0;

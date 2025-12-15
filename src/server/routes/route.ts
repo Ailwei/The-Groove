@@ -13,11 +13,13 @@ import {saveTokenController} from "../controllers/save-device-token";
 import { supportGrooveController } from "../controllers/grooveController";
 import { deleteGrooveController } from "../controllers/grooveController";
 import { getUserGroovesController } from "../controllers/grooveController";
-import { updateSettingsController } from "../controllers/settings";
+import { updateSettingsController, getSettingsController } from "../controllers/settings";
 
 const router = Router();
 
 router.patch('/updateSettings/:userId', authMiddleware, updateSettingsController);
+router.get('/getSettings/:userId', authMiddleware, getSettingsController);
+
 router.post("/grooves/tag", authMiddleware,tagGrooveController);
 router.get("/grooves",authMiddleware, getGroovesController);
 router.get("/grooves/userRecentGroove",authMiddleware, getUserGroovesController);

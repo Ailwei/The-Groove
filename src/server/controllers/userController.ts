@@ -40,6 +40,7 @@ export const createUserController = async (req: Request, res: Response) => {
       createdAt: Date.now(),
       settings: {
         locationAccuracy: "high",
+        notificationFrequency: "all",
         notificationsEnabled: true,
       },
       totalTags: 0,

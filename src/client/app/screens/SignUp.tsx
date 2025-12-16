@@ -101,13 +101,13 @@ export function SignupScreen({ onSignupSuccess, onNavigateToLogin }: SignupScree
           )}
         </TouchableOpacity>
 
-        <TouchableOpacity onPress={onNavigateToLogin} style={{ marginTop: 16 }}>
-          <Text style={styles.linkText}>Already have an account?{' '} 
-           <Text style={{ color: '#8b5cf6' }} onPress={onNavigateToLogin}>
-    Log in
-  </Text>
-            </Text>
-        </TouchableOpacity>
+       <View style={styles.loginRow}>
+  <Text style={styles.text}>Already have an account?</Text>
+  <TouchableOpacity onPress={onNavigateToLogin}>
+    <Text style={styles.linkText}> Log in</Text>
+  </TouchableOpacity>
+</View>
+
 
         <Toast />
       </ScrollView>
@@ -140,6 +140,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 16,
   },
+  text: {
+  color: 'black',
+  fontSize: 14,
+},
+loginRow: {
+  flexDirection: 'row',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: 16,
+},
   buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   linkText: { color: '#8b5cf6', textAlign: 'center', fontWeight: '500' },
 });

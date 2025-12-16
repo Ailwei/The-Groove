@@ -99,15 +99,16 @@ export function LoginScreen({ onLoginSuccess, onNavigateToSignup , onNavigateToF
             <Text style={styles.buttonText}>Log In</Text>
           )}
         </TouchableOpacity>
+        <View style={styles.signupRow}>
+  <Text style={styles.text}>Don't have an account?</Text>
+  <TouchableOpacity onPress={onNavigateToSignup}>
+    <Text style={styles.linkText}> Sign up</Text>
+  </TouchableOpacity>
+</View>
 
-        <TouchableOpacity onPress={onNavigateToSignup} style={{ marginTop: 16 }}>
-          <Text style={styles.linkText}>Don't have an account? Sign up</Text>
-        </TouchableOpacity>
        <TouchableOpacity onPress={onNavigateToForgot} style={{ marginTop: 16 }}>
   <Text style={styles.linkText}>Forgot password?</Text>
 </TouchableOpacity>
-
-
 
         <Toast />
       </ScrollView>
@@ -122,6 +123,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#f1f5f9',
   },
+  signupRow: {
+  flexDirection: 'row',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginTop: 16,
+},
   title: { fontSize: 28, fontWeight: 'bold', marginBottom: 24, textAlign: 'center' },
   field: { marginBottom: 16 },
   label: { fontWeight: 'bold', marginBottom: 4 },
@@ -131,6 +138,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     backgroundColor: '#fff',
+  },
+  text:{
+    color: "black",
+    textAlign: "center",
   },
   button: {
     backgroundColor: '#8b5cf6',

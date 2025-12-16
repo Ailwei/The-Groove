@@ -184,9 +184,9 @@ export function HomeScreen({
                   >
                     <View style={{
                       backgroundColor: 'rgba(0,0,0,0.8)',
-                      paddingHorizontal: 8,
-                      paddingVertical: 4,
-                      borderRadius: 12,
+                      paddingHorizontal: 2,
+                      paddingVertical: 1,
+                      borderRadius: 20,
                       minWidth: 28,
                       alignItems: 'center',
                       justifyContent: 'center',

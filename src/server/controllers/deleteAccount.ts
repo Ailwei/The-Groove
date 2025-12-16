@@ -12,6 +12,11 @@ export const deleteAccount = async (req: Request, res: Response) => {
         if (!userDoc.exists) {
             return res.status(404).json({ error: "User not found" });
         }
+        const groovesSnapshot = await db.collection("grooves").where("userId", "==", userId).get();
+        const batch = db.batch();
+        groovesSnapshot.forEach((doc) => batch.delete(doc.ref));
+        await batch.commit();
+
         await userRef.delete();
         return res.status(200).json({ message: "Account deleted successfully" });
     } catch (err) {

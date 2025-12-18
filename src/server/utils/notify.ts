@@ -14,28 +14,22 @@ type NotificationFrequency = 'all' | 'important' | 'owner' | 'groove';
 
 async function canNotifyUser(
   user: any,
-  type: 'all' | 'important' | 'owner' | 'groove' = 'all'
+  type: NotificationFrequency = 'all'
 ) {
-  if (!user?.deviceTokens?.length) return false;
-  if (!user.settings?.notificationsEnabled) return false;
+  if (!Array.isArray(user?.deviceTokens) || user.deviceTokens.length === 0) return false;
 
-  const freq: NotificationFrequency = user.settings?.notificationFrequency || 'all';
+  if (!user?.settings || user.settings.notificationsEnabled !== true) return false;
+
+  const freq: NotificationFrequency = user.settings.notificationFrequency || 'all';
 
   switch (type) {
-    case 'all':
-      return freq === 'all';
-    case 'important':
-      return freq === 'all' || freq === 'important';
-    case 'owner':
-      return freq === 'all' || freq === 'owner';
-    case 'groove':
-      return freq === 'all' || freq === 'groove';
-    default:
-      return false;
+    case 'all': return freq === 'all';
+    case 'important': return freq === 'all' || freq === 'important';
+    case 'owner': return freq === 'all' || freq === 'owner';
+    case 'groove': return freq === 'all' || freq === 'groove';
+    default: return false;
   }
 }
-
-
 export const sendNearbyNotifications = async (groove: { coordinates: { lat: number; lng: number }, notificationMsg: string }) => {
 
   const usersSnapshot = await db.collection("users").get();
@@ -151,10 +145,10 @@ export const notifyOwnerOnSupport = async (
 
   const owner = ownerDoc.data();
   if (!(await canNotifyUser(owner, 'important'))) return 0;
-
   if (!owner?.deviceTokens?.length) return 0;
 
   let sentCount = 0;
+  const invalidTokens: string[] = [];
 
   for (const token of owner.deviceTokens) {
     try {
@@ -173,9 +167,24 @@ export const notifyOwnerOnSupport = async (
         },
       });
       sentCount++;
-    } catch (err) {
-      console.error(`FCM error sending support notification to owner`, err);
+    } catch (err: any) {
+      console.error(`FCM error sending support notification to token ${token}:`, err);
+
+      if (
+        err.code === 'messaging/registration-token-not-registered' ||
+        err.code === 'messaging/invalid-argument'
+      ) {
+        invalidTokens.push(token);
+      }
     }
+  }
+
+  if (invalidTokens.length > 0) {
+    const updatedTokens = owner.deviceTokens.filter(
+      (t: string) => !invalidTokens.includes(t)
+    );
+    await db.collection("users").doc(ownerId).update({ deviceTokens: updatedTokens });
+    console.log(`Removed invalid tokens for user ${ownerId}:`, invalidTokens);
   }
 
   return sentCount;

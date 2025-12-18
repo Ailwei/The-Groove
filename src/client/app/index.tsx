@@ -1,8 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import axios from 'axios';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
-import Toast from 'react-native-toast-message';
 import NotificationRegistrar from './componet/NotificationRegistrar';
 import { SettingsProvider } from './contecxt/settingContext';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
@@ -16,8 +14,8 @@ import { SignupScreen } from './screens/SignUp';
 import { SplashScreen } from './screens/SplashScreen';
 import { TagGrooveScreen } from './screens/TagGrooveScreen';
 import * as Notifications from 'expo-notifications';
-
-
+import FetchGrooves from './componet/fetchGrooves';
+import Toast from 'react-native-toast-message';
 
 
 Notifications.setNotificationHandler({
@@ -31,8 +29,17 @@ Notifications.setNotificationHandler({
   }),
 });
 
-
-export type Screen = 'splash' | 'signup' | 'login' | 'onboarding' | 'home' | 'tag' | 'profile' | 'settings' | 'forgotpassword' | 'resetpassword';
+export type Screen =
+  | 'splash'
+  | 'signup'
+  | 'login'
+  | 'onboarding'
+  | 'home'
+  | 'tag'
+  | 'profile'
+  | 'settings'
+  | 'forgotpassword'
+  | 'resetpassword';
 
 export interface GrooveTag {
   id: string;
@@ -44,13 +51,12 @@ export interface GrooveTag {
   startTime: Date;
   endTime: Date;
   supportCount?: number;
+  userId: string;
 }
-
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState<Screen>('splash');
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
-  const [grooveTags, setGrooveTags] = useState<GrooveTag[]>([]);
   const [selectedGroove, setSelectedGroove] = useState<GrooveTag | null>(null);
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
@@ -73,65 +79,22 @@ export default function App() {
     initApp();
   }, []);
 
-useEffect(() => {
-  if (!userId) return;
-
-  const fetchGrooves = async () => {
-    try {
-      const token = await AsyncStorage.getItem('token');
-       if (!token) return;
-      const res = await axios.get('http://192.168.18.29:3000/api/grooves', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-
-      const formattedGrooves: GrooveTag[] = res.data.grooves.map((g: any) => ({
-        id: g.id,
-        coordinates: g.coordinates,
-        vibe: g.vibe,
-        message: g.message,
-        taggedAt: new Date(g.createdAt._seconds * 1000),
-        location: g.location || 'Unknown',
-        startTime: new Date(g.startAt._seconds * 1000),
-        endTime: new Date(g.expiresAt._seconds * 1000),
-        supportCount: g.supporters?.length || 0,
-      }));
-
-      setGrooveTags(formattedGrooves);
-    } catch (err) {
-      console.error('Error fetching grooves:', err);
-    }
-  };
-
-  fetchGrooves();
-  const interval = setInterval(fetchGrooves, 3000);
-  return () => clearInterval(interval);
-}, [userId]);
-
-
   const handleSplashComplete = () => {
     if (loading) return;
-
-    if (!userId) {
-      setCurrentScreen('signup');
-    } else {
-      setCurrentScreen('login');
-    }
+    setCurrentScreen(!userId ? 'signup' : 'login');
   };
+
   const handleSignupSuccess = async (id: string) => {
-    await AsyncStorage.getItem('userId');
+    await AsyncStorage.setItem('userId', id);
     setUserId(id);
     setCurrentScreen('login');
   };
 
   const handleLoginSuccess = async (id: string) => {
-    await AsyncStorage.getItem('userId');
+    await AsyncStorage.setItem('userId', id);
     setUserId(id);
 
-    if (!hasCompletedOnboarding) {
-      setCurrentScreen('onboarding');
-    } else {
-      setCurrentScreen('home');
-    }
+    setCurrentScreen(!hasCompletedOnboarding ? 'onboarding' : 'home');
   };
 
   const handleOnboardingComplete = async () => {
@@ -142,73 +105,86 @@ useEffect(() => {
 
   const handleAddGroove = (groove: Omit<GrooveTag, 'id' | 'taggedAt'>) => {
     const newGroove: GrooveTag = { ...groove, id: Date.now().toString(), taggedAt: new Date() };
-    setGrooveTags([...grooveTags, newGroove]);
     setCurrentScreen('home');
   };
 
   if (loading) return <ActivityIndicator size="large" style={{ flex: 1 }} />;
 
   return (
+    
     <SettingsProvider>
-        <NotificationRegistrar />
-    <View style={styles.container}>
-      {currentScreen === 'splash' && <SplashScreen onComplete={handleSplashComplete} />}
-      {currentScreen === 'signup' && (
-        <SignupScreen
-          onSignupSuccess={handleSignupSuccess}
-          onNavigateToLogin={() => setCurrentScreen('login')}
-        />
-      )}
-      {currentScreen === 'login' && (
-        <LoginScreen
-        onNavigateToForgot={() => setCurrentScreen('forgotpassword')}
-          onLoginSuccess={handleLoginSuccess}
-          onNavigateToSignup={() => setCurrentScreen('signup')}
-        />
-      )}
-   {currentScreen === 'forgotpassword' && (
-  <ForgotPasswordScreen
-    onNavigateToReset={(email) => {
-      setResetEmail(email);
-      setCurrentScreen('resetpassword');
-    }}
-    onBackToLogin={() => setCurrentScreen('login')}
-  />
-)}
+      <NotificationRegistrar />
+      <View style={styles.container}>
+        {currentScreen === 'splash' && <SplashScreen onComplete={handleSplashComplete} />}
 
-  {currentScreen === 'resetpassword' && resetEmail && (
-  <ResetPasswordScreen
-    email={resetEmail}
-    onBackToLogin={() => setCurrentScreen('login')}
-  />
-)}
+        {currentScreen === 'signup' && (
+          <SignupScreen
+            onSignupSuccess={handleSignupSuccess}
+            onNavigateToLogin={() => setCurrentScreen('login')}
+          />
+        )}
 
+        {currentScreen === 'login' && (
+          <LoginScreen
+            onLoginSuccess={handleLoginSuccess}
+            onNavigateToSignup={() => setCurrentScreen('signup')}
+            onNavigateToForgot={() => setCurrentScreen('forgotpassword')}
+          />
+        )}
 
-      {currentScreen === 'onboarding' && <OnboardingScreens onComplete={handleOnboardingComplete} />}
-      {currentScreen === 'home' && (
-        <HomeScreen
-          grooveTags={grooveTags}
-          onNavigateToTag={() => setCurrentScreen('tag')}
-          onNavigateToProfile={() => setCurrentScreen('profile')}
-          onNavigateToSettings={() => setCurrentScreen('settings')}
-          selectedGroove={selectedGroove}
-          onSelectGroove={setSelectedGroove}
-        />
-      )}
-      {currentScreen === 'tag' && <TagGrooveScreen onBack={() => setCurrentScreen('home')} onSubmit={handleAddGroove} />}
-      {currentScreen === 'profile' && <ProfileScreen onBack={() => setCurrentScreen('home')} onNavigateToSettings={() => setCurrentScreen('settings')} />}
-      {currentScreen === 'settings' && (
-        <SettingsScreen
-          onBack={() => setCurrentScreen('home')}
-          onLogout={async () => {
-            await AsyncStorage.removeItem('userId');
-            setUserId(null);
-            setCurrentScreen('login');
-          }}
-        />
-      )}
-      <Toast />
-    </View>
+        {currentScreen === 'forgotpassword' && (
+          <ForgotPasswordScreen
+            onNavigateToReset={(email) => {
+              setResetEmail(email);
+              setCurrentScreen('resetpassword');
+            }}
+            onBackToLogin={() => setCurrentScreen('login')}
+          />
+        )}
+
+        {currentScreen === 'resetpassword' && resetEmail && (
+          <ResetPasswordScreen email={resetEmail} onBackToLogin={() => setCurrentScreen('login')} />
+        )}
+
+        {currentScreen === 'onboarding' && (
+          <OnboardingScreens onComplete={handleOnboardingComplete} />
+        )}
+
+        {currentScreen === 'home' && userId && (
+          <FetchGrooves userId={userId}>
+            {(grooveTags) => (
+              <HomeScreen
+                grooveTags={grooveTags}
+                onNavigateToTag={() => setCurrentScreen('tag')}
+                onNavigateToProfile={() => setCurrentScreen('profile')}
+                onNavigateToSettings={() => setCurrentScreen('settings')}
+                selectedGroove={selectedGroove}
+                onSelectGroove={setSelectedGroove}
+              />
+            )}
+          </FetchGrooves>
+        )}
+
+        {currentScreen === 'tag' && (
+          <TagGrooveScreen onBack={() => setCurrentScreen('home')} onSubmit={handleAddGroove} />
+        )}
+
+        {currentScreen === 'profile' && (
+          <ProfileScreen onBack={() => setCurrentScreen('home')} onNavigateToSettings={() => setCurrentScreen('settings')} />
+        )}
+
+        {currentScreen === 'settings' && (
+          <SettingsScreen
+            onBack={() => setCurrentScreen('home')}
+            onLogout={async () => {
+              await AsyncStorage.removeItem('userId');
+              setUserId(null);
+              setCurrentScreen('login');
+            }}
+          />
+        )}
+        <Toast />
+      </View>
     </SettingsProvider>
   );
 }

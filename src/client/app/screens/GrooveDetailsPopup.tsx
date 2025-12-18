@@ -20,25 +20,25 @@ interface GrooveDetailsPopupProps {
 
 export function GrooveDetailsPopup({ groove, onClose, userLocation }: GrooveDetailsPopupProps) {
   const [reportModalVisible, setReportModalVisible] = useState(false);
-const [currentUser, setCurrentUser] = useState<{ userId: string } | null>(null);
+  const [currentUser, setCurrentUser] = useState<{ userId: string } | null>(null);
 
- useEffect(() => {
-  const loadUser = async () => {
-    const token = await AsyncStorage.getItem("token");
-    if (!token) return;
+  useEffect(() => {
+    const loadUser = async () => {
+      const token = await AsyncStorage.getItem("token");
+      if (!token) return;
 
-    try {
-      
-      const decoded: any = jwtDecode(token);
-      setCurrentUser({ userId: decoded.userId });
-    } catch (e) {
-      console.log("Failed to decode token", e);
-    }
-  };
+      try {
 
-  loadUser();
-}, []);
-  const getVibeColor = (vibe: GrooveTag['vibe']) => {
+        const decoded: any = jwtDecode(token);
+        setCurrentUser({ userId: decoded.userId });
+      } catch (e) {
+        console.log("Failed to decode token", e);
+      }
+    };
+
+    loadUser();
+  }, []);
+const getVibeColor = (vibe: GrooveTag['vibe']) => {
 
     switch (vibe) {
       case 'very-busy': return '#ef4444';
@@ -66,84 +66,114 @@ const [currentUser, setCurrentUser] = useState<{ userId: string } | null>(null);
   };
 
   const getDistance = () => {
-  if (!userLocation) return "Unknown";
+    if (!userLocation) return "Unknown";
 
-  const toRad = (value: number) => (value * Math.PI) / 180;
+    const toRad = (value: number) => (value * Math.PI) / 180;
 
-  const R = 6371;
-  const dLat = toRad(groove.coordinates.lat - userLocation.lat);
-  const dLng = toRad(groove.coordinates.lng - userLocation.lng);
+    const R = 6371;
+    const dLat = toRad(groove.coordinates.lat - userLocation.lat);
+    const dLng = toRad(groove.coordinates.lng - userLocation.lng);
 
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(userLocation.lat)) *
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(toRad(userLocation.lat)) *
       Math.cos(toRad(groove.coordinates.lat)) *
       Math.sin(dLng / 2) *
       Math.sin(dLng / 2);
 
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const distance = R * c;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    const distance = R * c;
 
-  return `${distance.toFixed(1)} km`;
-};
+    return `${distance.toFixed(1)} km`;
+  };
+  const handleNavigate = () => {
+    if (!userLocation) return;
+
+    const startLat = userLocation.lat;
+    const startLng = userLocation.lng;
+    const destLat = groove.coordinates.lat;
+    const destLng = groove.coordinates.lng;
+
+    Linking.openURL(
+      `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${destLat},${destLng}&travelmode=driving`
+    );
+  };
+  const handleSupport = async () => {
+      console.log("🔹 handleSupport called");
+
+    if (!userLocation) {
+          console.log("❌ User location missing, cannot support groove");
+
+      Toast.show({
+        type: 'error',
+        text1: 'Location required',
+        text2: 'Cannot support groove without your current location',
+      });
+      return;
+    }
+
+    const token = await AsyncStorage.getItem('token');
+    if (!token) return;
+console.log("Payload:", {
+  grooveId: groove.id,
+  userLat: userLocation?.lat,
+  userLng: userLocation?.lng,
+});
+    try {
+      console.log("⏳ Sending support request for groove:", groove.id);
+
+      const res = await axios.post(
+        'http://192.168.18.29:3000/api/groove/support',
+        {
+          grooveId: groove.id,
+          userLat: userLocation.lat,
+          userLng: userLocation.lng,
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+          console.log("✅ Support response:", res.data);
 
 
+          
+          
+          
+setTimeout(() => {
+      Toast.show({
+        type: 'success',
+        text1: res.data.message || 'Groove supported!',
+        text2: res.data.totalSupports
+          ? `Total supports: ${res.data.totalSupports}`
+          : undefined,
+});
+},0)
 
- const handleNavigate = () => {
-  if (!userLocation) return;
+    } catch (err: any) {
+        console.log("❌ Support error:", err);
+        const errorMessage = err.response?.data?.error || err.message || 'Something went wrong';
+ setTimeout(() => {
+      Toast.show({
+        type: 'error',
+        text1: 'Support failed',
+        text2: errorMessage,
+      });
+    }, 0);
+  }
+};;
 
-  const startLat = userLocation.lat;
-  const startLng = userLocation.lng;
-  const destLat = groove.coordinates.lat;
-  const destLng = groove.coordinates.lng;
+  const handleReportSubmit = async (reason: string) => {
+  if (!reason) return;
 
-  Linking.openURL(
-    `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${destLat},${destLng}&travelmode=driving`
-  );
-};
-const handleSupport = async () => {
-  if (!userLocation) {
-    Toast.show({
-      type: 'error',
-      text1: 'Location required',
-      text2: 'Cannot support groove without your current location',
-    });
+  const token = await AsyncStorage.getItem('token');
+  if (!token) {
+    Toast.show({ type: 'error', text1: 'You must be logged in to report' });
     return;
   }
 
-  const token = await AsyncStorage.getItem('token');
-  if (!token) return;
-
-  try {
-    const res = await axios.post(
-      'http://192.168.18.29:3000/api/groove/support',
-      {
-        grooveId: groove.id,
-        userLat: userLocation.lat,
-        userLng: userLocation.lng,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    Toast.show({
-      type: 'success',
-      text1: res.data.message || 'Groove supported!',
-      text2: res.data.totalSupports
-        ? `Total supports: ${res.data.totalSupports}`
-        : undefined,
-    });
-  } catch (err: any) {
-    Toast.show({
-      type: 'error',
-      text1: 'Support failed',
-      text2: err.response?.data?.error || err.message || 'Something went wrong',
-    });
+  if (!groove?.id) {
+    
+    Toast.show({ type: 'error', text1: 'Invalid groove' });
+    return;
   }
-};
-
-const handleReportSubmit = async (reason: string) => {
-  const token = await AsyncStorage.getItem('token');
-  if (!reason) return;
 
   try {
     const res = await axios.post(
@@ -154,11 +184,10 @@ const handleReportSubmit = async (reason: string) => {
 
     Toast.show({
       type: 'success',
-      text1: 'Report submitted successfully',
+      text1: res?.data?.message || 'Report submitted successfully',
     });
   } catch (err: any) {
     const message = err.response?.data?.error || err.message || 'Something went wrong';
-
     Toast.show({
       type: 'error',
       text1: 'Failed to submit report',
@@ -168,6 +197,7 @@ const handleReportSubmit = async (reason: string) => {
     setReportModalVisible(false);
   }
 };
+
 
   const insets = useSafeAreaInsets();
   return (
@@ -209,22 +239,28 @@ const handleReportSubmit = async (reason: string) => {
 
           </TouchableOpacity>
         </View>
-        <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
-  <TouchableOpacity style={[styles.navigateButton, { backgroundColor: '#8b5cf6', flex: 1, marginRight: 8 }]} onPress={handleSupport}>
-    <Text style={styles.navigateText}>👍 Support</Text>
-  </TouchableOpacity>
-<TouchableOpacity
-  style={[styles.navigateButton, { backgroundColor: '#ef4444', flex: 1, marginLeft: 8 }]}
-  onPress={() => setReportModalVisible(true)}
->
-  <Text style={styles.navigateText}>🚩 Report</Text>
-</TouchableOpacity>
-</View>
-<ReportModal
-  visible={reportModalVisible}
-  onSubmit={handleReportSubmit}
-  onClose={() => setReportModalVisible(false)}
-/>
+        {currentUser && currentUser.userId && groove && groove.userId && currentUser.userId !== groove.userId && (
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
+            <TouchableOpacity
+              style={[styles.navigateButton, { backgroundColor: '#8b5cf6', flex: 1, marginRight: 8 }]}
+              onPress={handleSupport}
+            >
+              <Text style={styles.navigateText}>👍 Support</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.navigateButton, { backgroundColor: '#ef4444', flex: 1, marginLeft: 8 }]}
+              onPress={() => setReportModalVisible(true)}
+            >
+              <Text style={styles.navigateText}>🚩 Report</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        <ReportModal
+          visible={reportModalVisible}
+          onSubmit={handleReportSubmit}
+          onClose={() => setReportModalVisible(false)}
+        />
 
 
       </View>

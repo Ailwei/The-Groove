@@ -1,5 +1,10 @@
 {
-  "android": {
-    "package": "com.ailwei.thegroove"
+  "expo": {
+    "name": "TheGroove",
+    "slug": "thegroove",
+    "scheme": "thegroove",
+    "android": {
+      "package": "com.ailwei.thegroove"
+    }
   }
 }

@@ -40,6 +40,9 @@ export function HomeScreen({
   const [isMapReady, setIsMapReady] = useState(false);
   const [grooves, setGrooves] = useState<GrooveTag[]>([]);
   const { highAccuracy } = useContext(SettingsContext);
+  const [tracksViewChanges, setTracksViewChanges] = useState(true);
+
+ 
 
 
   useEffect(() => {
@@ -75,6 +78,14 @@ export function HomeScreen({
       }
     })();
   }, [highAccuracy]);
+  
+   useEffect(() => {
+    const timer = setTimeout(() => {
+      setTracksViewChanges(true);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   const getSortedGrooves = () => {
     const now = new Date();
@@ -170,7 +181,12 @@ export function HomeScreen({
                     title={tag.location || 'Groove'}
                     description={tag.message}
                     pinColor={getVibeColor(tag.vibe)}
-                    onPress={() => onSelectGroove(tag)}
+                    onPress={() => {
+                      requestAnimationFrame(() => {
+                        onSelectGroove(tag);
+                      });
+                    }}
+
                   />
 
                   <Marker
@@ -179,9 +195,12 @@ export function HomeScreen({
                       longitude: tag.coordinates.lng,
                     }}
                     anchor={{ x: 0.5, y: 1 }}
-                    tracksViewChanges={true}
+                    tracksViewChanges={tracksViewChanges}
                     zIndex={10}
+                    pointerEvents="none"
                   >
+
+
                     <View style={{
                       backgroundColor: 'rgba(0,0,0,0.8)',
                       paddingHorizontal: 2,
@@ -223,15 +242,15 @@ export function HomeScreen({
                 groove={selectedGroove}
                 onClose={() => onSelectGroove(null)}
                 userLocation={userLocation}
-                onSupport={(id) => {
-                  setGrooves(prev =>
-                    prev.map(g =>
-                      g.id === id
-                        ? { ...g, supportCount: (g.supportCount ?? 0) + 1 }
-                        : g
-                    )
-                  );
-                }}
+               onSupport={() => {
+  if (selectedGroove) {
+    onSelectGroove({
+      ...selectedGroove,
+      supportCount: (selectedGroove.supportCount ?? 0) + 1,
+    });
+  }
+}}
+
               />
             )}
 

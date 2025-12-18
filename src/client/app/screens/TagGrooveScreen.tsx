@@ -34,6 +34,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
     { value: 'quiet', label: 'Quiet', color: '#3b82f6', emoji: '🔵' },
   ];
 
+  
   useEffect(() => {
     (async () => {
       try {
@@ -71,6 +72,11 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
 
   const handleSubmit = async () => {
   const token = await AsyncStorage.getItem("token");
+  const userId = await AsyncStorage.getItem("userId");
+if (!userId) {
+  Toast.show({ type: "error", text1: "User not found" });
+  return;
+}
   const now = new Date();
 
   const fixedStart = new Date(startTime);
@@ -102,6 +108,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
       location,
       startTime: fixedStart,
       endTime: fixedEnd,
+      userId
     });
     const response = await axios.post(
       "http://192.168.18.29:3000/api/grooves/tag",

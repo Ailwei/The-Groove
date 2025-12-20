@@ -21,6 +21,9 @@ interface GrooveDetailsPopupProps {
 export function GrooveDetailsPopup({ groove, onClose, userLocation }: GrooveDetailsPopupProps) {
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ userId: string } | null>(null);
+  const [supported, setSupported] = useState(false);
+  const [loadingSupport, setLoadingSupport] = useState(false);
+
 
   useEffect(() => {
     const loadUser = async () => {
@@ -31,6 +34,9 @@ export function GrooveDetailsPopup({ groove, onClose, userLocation }: GrooveDeta
 
         const decoded: any = jwtDecode(token);
         setCurrentUser({ userId: decoded.userId });
+        if (groove.supporters?.some((s: any) => s.userId === decoded.userId)) {
+          setSupported(true);
+        }
       } catch (e) {
         console.log("Failed to decode token", e);
       }
@@ -47,7 +53,6 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
       case 'quiet': return '#3b82f6';
     }
   };
-
   const getVibeLabel = (vibe: GrooveTag['vibe']) => {
     switch (vibe) {
       case 'very-busy': return '🔥 Very Busy';
@@ -99,58 +104,50 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
     );
   };
   const handleSupport = async () => {
-      console.log("🔹 handleSupport called");
 
-    if (!userLocation) {
-          console.log("❌ User location missing, cannot support groove");
-
-      Toast.show({
-        type: 'error',
-        text1: 'Location required',
-        text2: 'Cannot support groove without your current location',
-      });
+  if (!userLocation) {
+    Toast.show({
+      type: 'error',
+      text1: 'Location required',
+      text2: 'Cannot support groove without your current location',
+    });
+    return;
+  }
+  if (supported || loadingSupport) {
+      Toast.show({ type: 'info', text1: 'Already supported' });
       return;
     }
+    setSupported(true);
+    setLoadingSupport(true);
 
-    const token = await AsyncStorage.getItem('token');
-    if (!token) return;
-console.log("Payload:", {
-  grooveId: groove.id,
-  userLat: userLocation?.lat,
-  userLng: userLocation?.lng,
-});
-    try {
-      console.log("⏳ Sending support request for groove:", groove.id);
+  try {
+     const token = await AsyncStorage.getItem('token');
+     if (!token) return;
 
-      const res = await axios.post(
-        'http://192.168.18.29:3000/api/groove/support',
-        {
-          grooveId: groove.id,
-          userLat: userLocation.lat,
-          userLng: userLocation.lng,
-        },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-          console.log("✅ Support response:", res.data);
+    const res = await axios.post(
+      'http://192.168.18.29:3000/api/groove/support',
+      {
+        grooveId: groove.id,
+        userLat: userLocation.lat,
+        userLng: userLocation.lng,
+      },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
+    const { action, message, totalSupports } = res.data;
 
-          
-          
-          
-setTimeout(() => {
+    setTimeout(() => {
       Toast.show({
-        type: 'success',
-        text1: res.data.message || 'Groove supported!',
-        text2: res.data.totalSupports
-          ? `Total supports: ${res.data.totalSupports}`
-          : undefined,
-});
-},0)
+        type: action === "SUPPORTED_NEW" ? "success" : "info",
+        text1: message || (action === "SUPPORTED_NEW" ? "Groove supported!" : "You already support this groove"),
+        text2: totalSupports ? `Total supports: ${totalSupports}` : undefined,
+      });
+    }, 0);
 
-    } catch (err: any) {
-        console.log("❌ Support error:", err);
-        const errorMessage = err.response?.data?.error || err.message || 'Something went wrong';
- setTimeout(() => {
+  } catch (err: any) {
+    setSupported(false);
+    const errorMessage = err.response?.data?.error || err.message || 'Something went wrong';
+    setTimeout(() => {
       Toast.show({
         type: 'error',
         text1: 'Support failed',
@@ -158,7 +155,7 @@ setTimeout(() => {
       });
     }, 0);
   }
-};;
+};
 
   const handleReportSubmit = async (reason: string) => {
   if (!reason) return;
@@ -244,6 +241,7 @@ setTimeout(() => {
             <TouchableOpacity
               style={[styles.navigateButton, { backgroundColor: '#8b5cf6', flex: 1, marginRight: 8 }]}
               onPress={handleSupport}
+              disabled={supported || loadingSupport}
             >
               <Text style={styles.navigateText}>👍 Support</Text>
             </TouchableOpacity>

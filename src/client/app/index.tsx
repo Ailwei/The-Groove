@@ -41,6 +41,10 @@ export type Screen =
   | 'forgotpassword'
   | 'resetpassword';
 
+interface Supporter {
+  userId: string;
+  username: string;
+}
 export interface GrooveTag {
   id: string;
   coordinates: { lat: number; lng: number };
@@ -52,6 +56,7 @@ export interface GrooveTag {
   endTime: Date;
   supportCount?: number;
   userId: string;
+  supporters?: Supporter[];
 }
 
 export default function App() {

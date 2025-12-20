@@ -130,31 +130,18 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
 
       const data = response.data;
 
-      if (data?.existingGroove && data.totalSupports === null) {
-        Toast.show({
-          type: "info",
-          text1: "You already own this groove",
-          text2: "You cannot support your own groove",
-        });
-        return;
-      }
-
-      if (data?.existingGroove && data.totalSupports !== null) {
-        Toast.show({
-          type: "success",
-          text1: "Support Added",
-          text2: "A groove already exists here. You supported it instead.",
-        });
-        return;
-      }
-
-      if (response.status === 201) {
-        Toast.show({
-          type: "success",
-          text1: "Groove tagged successfully",
-        });
-        return;
-      }
+      if (data?.message) {
+  Toast.show({
+    type:
+      data.action === "SUPPORTED_VIA_TAG"
+        ? "success"
+        : data.action === "CREATED"
+        ? "success"
+        : "info",
+    text1: data.message,
+  });
+  return;
+}
 
       if (data?.error) {
         Toast.show({
@@ -179,7 +166,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
       type: 'info',
       text1: '💡 Your tagged spot will appear on the map',
       position: 'top',
-      visibilityTime: 5000,
+      visibilityTime: 2000,
       autoHide: true
     });
   }, []);

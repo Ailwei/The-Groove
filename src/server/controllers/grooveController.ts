@@ -104,17 +104,40 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
     };
 
     if (existingGroove) {
-      const grooveRef = db.collection("grooves").doc(existingGroove.id);
-      const totalSupports = await addSupporter(grooveRef, userId, username);
-      const isImportant = await updateGrooveImportance(grooveRef);
+  const grooveRef = db.collection("grooves").doc(existingGroove.id);
 
-      return res.status(200).json({
-        message: "Groove already exists — support added",
-        grooveId: existingGroove.id,
-        totalSupports,
-        isImportant
-      });
-    }
+  if (existingGroove.userId === userId) {
+    return res.status(200).json({
+      action: "OWN_GROOVE",
+      message: "You already own this groove",
+    });
+  }
+
+  const alreadySupported = existingGroove.supporters?.some(
+    (s: any) => s.userId === userId
+  );
+
+  if (alreadySupported) {
+    return res.status(200).json({
+      action: "ALREADY_SUPPORTED",
+      message: "You have already supported this groove",
+    });
+  }
+
+  const totalSupports = await addSupporter(grooveRef, userId, username);
+  const isImportant = await updateGrooveImportance(grooveRef);
+
+  await notifyOwnerOnSupport(existingGroove.id, existingGroove.userId, username);
+
+  return res.status(200).json({
+    action: "SUPPORTED_VIA_TAG",
+    message: "Groove already exists — support added",
+    grooveId: existingGroove.id,
+    totalSupports,
+    isImportant,
+  });
+}
+
 
     const locationName = await resolveLocationName(lat, lng);
     const newGroove = {
@@ -183,53 +206,72 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
     const grooveRef = db.collection("grooves").doc(grooveId);
     const grooveDoc = await grooveRef.get();
 
-    if (!grooveDoc.exists) return res.status(404).json({ error: "Groove not found" });
-    const grooveData = grooveDoc.data();
-    console.log(grooveData)
-    if (!grooveData) return res.status(500).json({ error: "Invalid groove data" });
-
-    const distance = getDistanceFromLatLonInM(userLat, userLng, grooveData.coordinates.lat, grooveData.coordinates.lng);
-    if (distance > RADIUS_METERS) {
-      return res.status(400).json({ error: `Too far away to support (max ${RADIUS_METERS} meters)` });
+    if (!grooveDoc.exists) {
+      return res.status(404).json({ error: "Groove not found" });
     }
-    if (grooveData.userId === userId) return res.status(400).json({ error: "Cannot support own groove" });
 
-    const alreadySupported = grooveData.supporters?.some((s: any) => s.userId === userId);
-    if (alreadySupported) return res.status(400).json({ error: "Already supported" });
+    const grooveData = grooveDoc.data();
+    if (!grooveData) {
+      return res.status(500).json({ error: "Invalid groove data" });
+    }
 
+    const distance = getDistanceFromLatLonInM(
+      userLat,
+      userLng,
+      grooveData.coordinates.lat,
+      grooveData.coordinates.lng
+    );
+
+    if (distance > RADIUS_METERS) {
+      return res.status(400).json({
+        error: `Too far away to support (max ${RADIUS_METERS} meters)`,
+      });
+    }
+
+    if (grooveData.userId === userId) {
+      return res.status(403).json({ error: "Cannot support own groove" });
+    }
+
+    const alreadySupported = grooveData.supporters?.some(
+      (s: any) => s.userId === userId
+    );
+
+    // ✅ IMPORTANT CHANGE
+    if (alreadySupported) {
+      return res.status(200).json({
+        action: "SUPPORTED_EXISTING",
+        message: "You already support this groove",
+        grooveId,
+        totalSupports: grooveData.supporters.length,
+        isImportant: grooveData.isImportant ?? false,
+      });
+    }
+
+    // New support
     const totalSupports = await addSupporter(grooveRef, userId, username);
-
     const isImportant = await updateGrooveImportance(grooveRef);
 
     await notifyOwnerOnSupport(grooveId, grooveData.userId, username);
-
-
-    const grooveForNotification = {
-      coordinates: {
-        lat: grooveData.coordinates.lat,
-        lng: grooveData.coordinates.lng,
-      },
-      message: grooveData.message,
-      isImportant: isImportant,
-    };
-
     await sendSupportedGroovesNotifications({
       grooveId,
       ownerId: grooveData.userId,
       supportCount: totalSupports,
     });
 
-
     return res.status(200).json({
+      action: "SUPPORTED_NEW",
       message: "Groove supported successfully",
+      grooveId,
       totalSupports,
-      isImportant
+      isImportant,
     });
 
   } catch (error: any) {
-    return res.status(500).json({ error: error.message });
+    console.error("supportGrooveController error:", error);
+    return res.status(500).json({ error: "Internal server error" });
   }
 };
+
 export const getUserGroovesController = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;

@@ -14,7 +14,7 @@ import { supportGrooveController } from "../controllers/grooveController";
 import { deleteGrooveController } from "../controllers/grooveController";
 import { getUserGroovesController } from "../controllers/grooveController";
 import { updateSettingsController, getSettingsController } from "../controllers/settings";
-
+import { updateLocationController } from "../controllers/updateLocation";
 const router = Router();
 
 router.patch('/updateSettings/:userId', authMiddleware, updateSettingsController);
@@ -23,7 +23,7 @@ router.get('/getSettings/:userId', authMiddleware, getSettingsController);
 router.post("/grooves/tag", authMiddleware,tagGrooveController);
 router.get("/grooves",authMiddleware, getGroovesController);
 router.get("/grooves/userRecentGroove",authMiddleware, getUserGroovesController);
-
+router.patch("/user/upldatelocation", authMiddleware, updateLocationController)
 router.post("/users/login", loginController)
 router.post("/user/resetPassword", resetPasswordWithOtp )
 router.post("/user/forgotPassword", requestPasswordResetController)

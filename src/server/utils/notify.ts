@@ -1,5 +1,5 @@
 import { admin, db } from "../firebase/firestore";
-import { getDistanceFromLatLonInM } from "./geo";
+import { getDistanceFromLatLonInM } from "../shared/geo";
 
 type SupportedGroovePayload = {
   grooveId: string;

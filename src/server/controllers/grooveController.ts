@@ -1,7 +1,7 @@
 import { Response } from "express";
 import admin from "firebase-admin";
 import { db } from "../firebase/firestore";
-import { getDistanceFromLatLonInM } from "../utils/geo";
+import { getDistanceFromLatLonInM } from "../shared/geo";
 import { sendNearbyNotifications, sendSupportedGroovesNotifications, notifyOwnerOnSupport } from "../utils/notify";
 import axios from "axios";
 import { AuthRequest } from "../middleWare/middleWare";

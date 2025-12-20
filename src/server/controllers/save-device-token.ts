@@ -24,8 +24,6 @@ export const saveTokenController = async (req: Request, res: Response) => {
       existingTokens.push(deviceToken);
     }
 
-    console.log("Updating user:", userId, "with tokens:", existingTokens);
-
     await userRef.update({
       deviceTokens: existingTokens,
       lastUpdated: new Date(),

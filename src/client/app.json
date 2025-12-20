@@ -3,8 +3,19 @@
     "name": "TheGroove",
     "slug": "thegroove",
     "scheme": "thegroove",
+
     "android": {
-      "package": "com.ailwei.thegroove"
+      "package": "com.ailwei.thegroove",
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION"
+      ]
+    },
+
+    "ios": {
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "TheGroove uses your location to show nearby grooves and send notifications."
+      }
     }
   }
 }

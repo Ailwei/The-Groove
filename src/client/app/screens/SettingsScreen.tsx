@@ -8,6 +8,7 @@ import Toast from 'react-native-toast-message';
 import * as Location from "expo-location";
 import { useContext } from 'react';
 import SettingsContext from '../contecxt/settingContext';
+import { useLocation } from '../contecxt/LocationContext';
 
 interface SettingsScreenProps {
   onBack: () => void;
@@ -16,8 +17,7 @@ interface SettingsScreenProps {
 
 export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
   const [location, setLocation] = useState('Fetching location...');
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
-  const {
+const { location: coords, loading } = useLocation();  const {
     highAccuracy,
     setHighAccuracy,
     notificationsEnabled,
@@ -75,39 +75,29 @@ export function SettingsScreen({ onBack, onLogout }: SettingsScreenProps) {
     }
   };
   useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Toast.show({ type: 'error', text1: 'Location permission denied' });
-          setLocation('Unknown Location');
-          return;
+    if (!loading && coords) {
+      (async () => {
+        try {
+          const res = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+            params: { lat: coords.lat, lon: coords.lng, format: "json" },
+            headers: { "User-Agent": "TheGrooveApp/1.0" }
+          });
+
+          const address = res.data.address;
+          let locationName = "Unknown Location";
+          if (address) {
+            locationName = address.road
+              ? `${address.road}, ${address.suburb || address.city || ""}`.trim()
+              : address.suburb || address.city || "Unknown Location";
+          }
+          setLocation(locationName);
+        } catch (err) {
+          console.error("Failed to fetch location:", err);
+          setLocation("Unknown Location");
         }
-
-        const pos = await Location.getCurrentPositionAsync({});
-        const currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setCoords(currentCoords);
-
-        const res = await axios.get("https://nominatim.openstreetmap.org/reverse", {
-          params: { lat: currentCoords.lat, lon: currentCoords.lng, format: "json" },
-          headers: { "User-Agent": "TheGrooveApp/1.0" }
-        });
-
-        const address = res.data.address;
-        let locationName = "Unknown Location";
-        if (address) {
-          locationName = address.road
-            ? `${address.road}, ${address.suburb || address.city || ""}`.trim()
-            : address.suburb || address.city || "Unknown Location";
-        }
-
-        setLocation(locationName);
-      } catch (err) {
-        console.error("Failed to fetch location:", err);
-        setLocation("Unknown Location");
-      }
-    })();
-  }, []);
+      })();
+    }
+  }, [coords, loading]);
 const { reloadSettings } = useContext(SettingsContext);
 
 useEffect(() => {

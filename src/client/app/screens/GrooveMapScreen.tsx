@@ -7,9 +7,8 @@ import { Menu as PaperMenu, Provider } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { GrooveTag } from '..';
-import SettingsContext from '../contecxt/settingContext';
 import { GrooveDetailsPopup } from './GrooveDetailsPopup';
-
+import { useLocation } from '../contecxt/LocationContext';
 
 interface HomeScreenProps {
   grooveTags: GrooveTag[];
@@ -22,7 +21,7 @@ interface HomeScreenProps {
 
 const { width, height } = Dimensions.get('window');
 
-export function HomeScreen({
+export function GrooveMapScreen({
   grooveTags,
   onNavigateToTag,
   onNavigateToProfile,
@@ -33,51 +32,11 @@ export function HomeScreen({
   const mapRef = useRef<MapView | null>(null);
 
   const [profileMenuVisible, setProfileMenuVisible] = useState(false);
-  const [mapRegion, setMapRegion] = useState<any>(null);
-  const [isLocationLoading, setIsLocationLoading] = useState(true);
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
-  const [userFocused, setUserFocused] = useState(false);
+  const { location: userLocation, loading: locationLoading } = useLocation();
   const [isMapReady, setIsMapReady] = useState(false);
-  const [grooves, setGrooves] = useState<GrooveTag[]>([]);
-  const { highAccuracy } = useContext(SettingsContext);
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
 
  
-
-
-  useEffect(() => {
-    (async () => {
-
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          console.warn("Location permission denied");
-          setIsLocationLoading(false);
-          return;
-        }
-
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: highAccuracy ? Location.Accuracy.Highest : Location.Accuracy.Balanced,
-        });
-
-        setUserLocation({
-          lat: location.coords.latitude,
-          lng: location.coords.longitude,
-        });
-
-        setMapRegion({
-          latitude: location.coords.latitude,
-          longitude: location.coords.longitude,
-          latitudeDelta: 0.45,
-          longitudeDelta: 0.45,
-        });
-      } catch (err) {
-        console.warn("Error fetching location", err);
-      } finally {
-        setIsLocationLoading(false);
-      }
-    })();
-  }, [highAccuracy]);
   
    useEffect(() => {
     const timer = setTimeout(() => {
@@ -152,7 +111,7 @@ export function HomeScreen({
             <Text style={styles.legendText}>Quiet</Text>
           </View>
         </View>
-        {isLocationLoading ? (
+        {locationLoading || !userLocation ? (
           <View style={styles.initialLoader}>
             <Text style={styles.initialLoaderText}>Finding your location…</Text>
           </View>
@@ -164,8 +123,8 @@ export function HomeScreen({
               showsUserLocation={true}
               showsMyLocationButton={true}
               initialRegion={{
-                latitude: userLocation!.lat,
-                longitude: userLocation!.lng,
+                latitude: userLocation?.lat ?? 0,
+                longitude: userLocation?.lng ?? 0,
                 latitudeDelta: 0.05,
                 longitudeDelta: 0.05,
               }}
@@ -223,7 +182,7 @@ export function HomeScreen({
 
 
 
-            {(!isMapReady || isLocationLoading) && (
+            {(!isMapReady || locationLoading) && (
               <View style={styles.mapLoadingOverlay}>
                 <Text style={styles.loadingText}>Loading map…</Text>
               </View>
@@ -361,4 +320,4 @@ const styles = StyleSheet.create({
   legendText: { fontSize: 12, color: '#333' },
 });
 
-export default HomeScreen;
+export default GrooveMapScreen;

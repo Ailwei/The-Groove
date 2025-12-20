@@ -3,8 +3,9 @@ import React, { useEffect, useState } from 'react';
 import { ActivityIndicator, StyleSheet, View } from 'react-native';
 import NotificationRegistrar from './componet/NotificationRegistrar';
 import { SettingsProvider } from './contecxt/settingContext';
+import { LocationProvider } from './contecxt/LocationContext';
 import ForgotPasswordScreen from './screens/ForgotPasswordScreen';
-import { HomeScreen } from './screens/HomeScreen';
+import { GrooveMapScreen } from './screens/GrooveMapScreen';
 import { LoginScreen } from './screens/LoginScreen';
 import { OnboardingScreens } from './screens/OnboardingScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
@@ -16,7 +17,6 @@ import { TagGrooveScreen } from './screens/TagGrooveScreen';
 import * as Notifications from 'expo-notifications';
 import FetchGrooves from './componet/fetchGrooves';
 import Toast from 'react-native-toast-message';
-
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -111,80 +111,85 @@ export default function App() {
   if (loading) return <ActivityIndicator size="large" style={{ flex: 1 }} />;
 
   return (
-    
     <SettingsProvider>
-      <NotificationRegistrar />
-      <View style={styles.container}>
-        {currentScreen === 'splash' && <SplashScreen onComplete={handleSplashComplete} />}
+      <LocationProvider>
+        <NotificationRegistrar />
+        <View style={styles.container}>
+          {currentScreen === 'splash' && <SplashScreen onComplete={handleSplashComplete} />}
 
-        {currentScreen === 'signup' && (
-          <SignupScreen
-            onSignupSuccess={handleSignupSuccess}
-            onNavigateToLogin={() => setCurrentScreen('login')}
-          />
-        )}
+          {currentScreen === 'signup' && (
+            <SignupScreen
+              onSignupSuccess={handleSignupSuccess}
+              onNavigateToLogin={() => setCurrentScreen('login')}
+            />
+          )}
 
-        {currentScreen === 'login' && (
-          <LoginScreen
-            onLoginSuccess={handleLoginSuccess}
-            onNavigateToSignup={() => setCurrentScreen('signup')}
-            onNavigateToForgot={() => setCurrentScreen('forgotpassword')}
-          />
-        )}
+          {currentScreen === 'login' && (
+            <LoginScreen
+              onLoginSuccess={handleLoginSuccess}
+              onNavigateToSignup={() => setCurrentScreen('signup')}
+              onNavigateToForgot={() => setCurrentScreen('forgotpassword')}
+            />
+          )}
 
-        {currentScreen === 'forgotpassword' && (
-          <ForgotPasswordScreen
-            onNavigateToReset={(email) => {
-              setResetEmail(email);
-              setCurrentScreen('resetpassword');
-            }}
-            onBackToLogin={() => setCurrentScreen('login')}
-          />
-        )}
+          {currentScreen === 'forgotpassword' && (
+            <ForgotPasswordScreen
+              onNavigateToReset={(email) => {
+                setResetEmail(email);
+                setCurrentScreen('resetpassword');
+              }}
+              onBackToLogin={() => setCurrentScreen('login')}
+            />
+          )}
 
-        {currentScreen === 'resetpassword' && resetEmail && (
-          <ResetPasswordScreen email={resetEmail} onBackToLogin={() => setCurrentScreen('login')} />
-        )}
+          {currentScreen === 'resetpassword' && resetEmail && (
+            <ResetPasswordScreen email={resetEmail} onBackToLogin={() => setCurrentScreen('login')} />
+          )}
 
-        {currentScreen === 'onboarding' && (
-          <OnboardingScreens onComplete={handleOnboardingComplete} />
-        )}
+          {currentScreen === 'onboarding' && (
+            <OnboardingScreens onComplete={handleOnboardingComplete} />
+          )}
 
-        {currentScreen === 'home' && userId && (
-          <FetchGrooves userId={userId}>
-            {(grooveTags) => (
-              <HomeScreen
-                grooveTags={grooveTags}
-                onNavigateToTag={() => setCurrentScreen('tag')}
-                onNavigateToProfile={() => setCurrentScreen('profile')}
-                onNavigateToSettings={() => setCurrentScreen('settings')}
-                selectedGroove={selectedGroove}
-                onSelectGroove={setSelectedGroove}
-              />
-            )}
-          </FetchGrooves>
-        )}
+         {currentScreen === 'home' && userId ? (
+  <LocationProvider>
+    <FetchGrooves userId={userId}>
+      {(grooveTags) => (
+        <GrooveMapScreen
+          grooveTags={grooveTags}
+          onNavigateToTag={() => setCurrentScreen('tag')}
+          onNavigateToProfile={() => setCurrentScreen('profile')}
+          onNavigateToSettings={() => setCurrentScreen('settings')}
+          selectedGroove={selectedGroove}
+          onSelectGroove={setSelectedGroove}
+        />
+      )}
+    </FetchGrooves>
+  </LocationProvider>
+) : null}
 
-        {currentScreen === 'tag' && (
-          <TagGrooveScreen onBack={() => setCurrentScreen('home')} onSubmit={handleAddGroove} />
-        )}
 
-        {currentScreen === 'profile' && (
-          <ProfileScreen onBack={() => setCurrentScreen('home')} onNavigateToSettings={() => setCurrentScreen('settings')} />
-        )}
+          {currentScreen === 'tag' && (
+            <TagGrooveScreen onBack={() => setCurrentScreen('home')} onSubmit={handleAddGroove} />
+          )}
 
-        {currentScreen === 'settings' && (
-          <SettingsScreen
-            onBack={() => setCurrentScreen('home')}
-            onLogout={async () => {
-              await AsyncStorage.removeItem('userId');
-              setUserId(null);
-              setCurrentScreen('login');
-            }}
-          />
-        )}
-        <Toast />
-      </View>
+          {currentScreen === 'profile' && (
+            <ProfileScreen onBack={() => setCurrentScreen('home')} onNavigateToSettings={() => setCurrentScreen('settings')} />
+          )}
+
+          {currentScreen === 'settings' && (
+            <SettingsScreen
+              onBack={() => setCurrentScreen('home')}
+              onLogout={async () => {
+                await AsyncStorage.removeItem('userId');
+                setUserId(null);
+                setCurrentScreen('login');
+              }}
+            />
+          )}
+
+          <Toast />
+        </View>
+      </LocationProvider>
     </SettingsProvider>
   );
 }

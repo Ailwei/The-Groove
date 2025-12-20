@@ -8,6 +8,7 @@ import { Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, 
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 import { GrooveTag } from '..';
+import { useLocation } from '../contecxt/LocationContext';
 
 interface TagGrooveScreenProps {
   onBack: () => void;
@@ -17,6 +18,7 @@ interface TagGrooveScreenProps {
 const { width, height } = Dimensions.get("window");
 
 export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
+  const { location: userLocation, loading: locationLoading, error: locationError } = useLocation();
   const [location, setLocation] = useState('Fetching location...');
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(null);
   const [vibe, setVibe] = useState<GrooveTag['vibe']>('busy');
@@ -34,142 +36,144 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
     { value: 'quiet', label: 'Quiet', color: '#3b82f6', emoji: '🔵' },
   ];
 
-  
+
   useEffect(() => {
-    (async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          Toast.show({ type: 'error', text1: 'Location permission denied' });
-          setLocation('Unknown Location');
-          return;
+    if (userLocation) {
+      setCoords(userLocation);
+
+      (async () => {
+        try {
+          const res = await axios.get("https://nominatim.openstreetmap.org/reverse", {
+            params: {
+              lat: userLocation.lat,
+              lon: userLocation.lng,
+              format: "json"
+            },
+            headers: { "User-Agent": "TheGrooveApp/1.0" }
+          });
+
+          const address = res.data.address;
+          let locationName = "Unknown Location";
+          if (address) {
+            locationName = address.road
+              ? `${address.road}, ${address.suburb || address.city || ""}`.trim()
+              : address.suburb || address.city || "Unknown Location";
+          }
+
+          setLocation(locationName);
+        } catch (err) {
+          console.error("Failed to reverse geocode:", err);
+          setLocation("Unknown Location");
         }
-
-        const pos = await Location.getCurrentPositionAsync({});
-        const currentCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setCoords(currentCoords);
-
-        const res = await axios.get("https://nominatim.openstreetmap.org/reverse", {
-          params: { lat: currentCoords.lat, lon: currentCoords.lng, format: "json" },
-          headers: { "User-Agent": "TheGrooveApp/1.0" }
-        });
-
-        const address = res.data.address;
-        let locationName = "Unknown Location";
-        if (address) {
-          locationName = address.road
-            ? `${address.road}, ${address.suburb || address.city || ""}`.trim()
-            : address.suburb || address.city || "Unknown Location";
-        }
-
-        setLocation(locationName);
-      } catch (err) {
-        console.error("Failed to fetch location:", err);
-        setLocation("Unknown Location");
-      }
-    })();
-  }, []);
+      })();
+    } else if (locationError) {
+      setLocation("Unknown Location");
+      Toast.show({ type: 'error', text1: 'Location permission denied' });
+    } else if (locationLoading) {
+      setLocation('Fetching location...');
+    }
+  }, [userLocation, locationLoading, locationError]);
 
   const handleSubmit = async () => {
-  const token = await AsyncStorage.getItem("token");
-  const userId = await AsyncStorage.getItem("userId");
-if (!userId) {
-  Toast.show({ type: "error", text1: "User not found" });
-  return;
-}
-  const now = new Date();
+    const token = await AsyncStorage.getItem("token");
+    const userId = await AsyncStorage.getItem("userId");
+    if (!userId) {
+      Toast.show({ type: "error", text1: "User not found" });
+      return;
+    }
+    const now = new Date();
 
-  const fixedStart = new Date(startTime);
-  const fixedEnd = new Date(endTime);
+    const fixedStart = new Date(startTime);
+    const fixedEnd = new Date(endTime);
 
-  if (fixedEnd.getTime() <= fixedStart.getTime()) {
-    fixedEnd.setDate(fixedEnd.getDate() + 1);
-  }
+    if (fixedEnd.getTime() <= fixedStart.getTime()) {
+      fixedEnd.setDate(fixedEnd.getDate() + 1);
+    }
 
-  if (fixedEnd.getTime() <= now.getTime()) {
-    Toast.show({ type: "error", text1: "End time must be in the future" });
-    return;
-  }
-
-  if (!coords) {
-    Toast.show({
-      type: "error",
-      text1: "Current location not available...wait for it to load"
-    });
-    return;
-  }
-
-  try {
-    const submitCoords = coords;
-    onSubmit({
-      coordinates: submitCoords,
-      vibe,
-      message: message.trim() || undefined,
-      location,
-      startTime: fixedStart,
-      endTime: fixedEnd,
-      userId
-    });
-    const response = await axios.post(
-      "http://192.168.18.29:3000/api/grooves/tag",
-      {
-        lat: submitCoords.lat,
-        lng: submitCoords.lng,
-        vibe,
-        message: message.trim() || null,
-        location,
-        startTime: fixedStart.toISOString(),
-        endTime: fixedEnd.toISOString(),
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-
-    const data = response.data;
-
-    if (data?.existingGroove && data.totalSupports === null) {
-      Toast.show({
-        type: "info",
-        text1: "You already own this groove",
-        text2: "You cannot support your own groove",
-      });
+    if (fixedEnd.getTime() <= now.getTime()) {
+      Toast.show({ type: "error", text1: "End time must be in the future" });
       return;
     }
 
-    if (data?.existingGroove && data.totalSupports !== null) {
-      Toast.show({
-        type: "success",
-        text1: "Support Added",
-        text2: "A groove already exists here. You supported it instead.",
-      });
-      return;
-    }
-
-    if (response.status === 201) {
-      Toast.show({
-        type: "success",
-        text1: "Groove tagged successfully",
-      });
-      return;
-    }
-
-    if (data?.error) {
+    if (!coords) {
       Toast.show({
         type: "error",
-        text1: "Error",
-        text2: data.error,
+        text1: "Current location not available...wait for it to load"
       });
       return;
     }
 
-  } catch (err) {
-    console.error(err);
-    Toast.show({
-      type: "error",
-      text1: "Failed to tag groove",
-      text2: "Something went wrong.",
-    });
-  }
-};
+    try {
+      const submitCoords = coords;
+      onSubmit({
+        coordinates: submitCoords,
+        vibe,
+        message: message.trim() || undefined,
+        location,
+        startTime: fixedStart,
+        endTime: fixedEnd,
+        userId
+      });
+      const response = await axios.post(
+        "http://192.168.18.29:3000/api/grooves/tag",
+        {
+          lat: submitCoords.lat,
+          lng: submitCoords.lng,
+          vibe,
+          message: message.trim() || null,
+          location,
+          startTime: fixedStart.toISOString(),
+          endTime: fixedEnd.toISOString(),
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      const data = response.data;
+
+      if (data?.existingGroove && data.totalSupports === null) {
+        Toast.show({
+          type: "info",
+          text1: "You already own this groove",
+          text2: "You cannot support your own groove",
+        });
+        return;
+      }
+
+      if (data?.existingGroove && data.totalSupports !== null) {
+        Toast.show({
+          type: "success",
+          text1: "Support Added",
+          text2: "A groove already exists here. You supported it instead.",
+        });
+        return;
+      }
+
+      if (response.status === 201) {
+        Toast.show({
+          type: "success",
+          text1: "Groove tagged successfully",
+        });
+        return;
+      }
+
+      if (data?.error) {
+        Toast.show({
+          type: "error",
+          text1: "Error",
+          text2: data.error,
+        });
+        return;
+      }
+
+    } catch (err) {
+      console.error(err);
+      Toast.show({
+        type: "error",
+        text1: "Failed to tag groove",
+        text2: "Something went wrong.",
+      });
+    }
+  };
   useEffect(() => {
     Toast.show({
       type: 'info',

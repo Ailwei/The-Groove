@@ -60,7 +60,7 @@ export function ForgotPasswordScreen({ onBackToLogin, onNavigateToReset }: Forgo
         </View>
 
         <TouchableOpacity style={styles.button} onPress={handleForgotPassword} disabled={loading}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send Reset Link</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send OTP</Text>}
         </TouchableOpacity>
 
         <TouchableOpacity onPress={onBackToLogin} style={{ marginTop: 16 }}>

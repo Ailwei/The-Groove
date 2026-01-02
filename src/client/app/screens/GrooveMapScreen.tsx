@@ -17,6 +17,7 @@ interface HomeScreenProps {
   onNavigateToSettings: () => void;
   selectedGroove: GrooveTag | null;
   onSelectGroove: (groove: GrooveTag | null) => void;
+  onJoinChat: (groove: GrooveTag | null) => void;
 }
 
 const { width, height } = Dimensions.get('window');
@@ -28,6 +29,7 @@ export function GrooveMapScreen({
   onNavigateToSettings,
   selectedGroove,
   onSelectGroove,
+  onJoinChat,
 }: HomeScreenProps) {
   const mapRef = useRef<MapView | null>(null);
 
@@ -200,6 +202,7 @@ export function GrooveMapScreen({
               <GrooveDetailsPopup
                 groove={selectedGroove}
                 onClose={() => onSelectGroove(null)}
+                 onJoinChat={onJoinChat} 
                 userLocation={userLocation}
                onSupport={() => {
   if (selectedGroove) {

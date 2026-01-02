@@ -15,6 +15,7 @@ import { deleteGrooveController } from "../controllers/grooveController";
 import { getUserGroovesController } from "../controllers/grooveController";
 import { updateSettingsController, getSettingsController } from "../controllers/settings";
 import { updateLocationController } from "../controllers/updateLocation";
+import {joinChatGroupController, leaveChatGroupController, sendMessageController } from "../controllers/chatController";
 const router = Router();
 
 router.patch('/updateSettings/:userId', authMiddleware, updateSettingsController);
@@ -37,4 +38,7 @@ router.post("/groove/report",authMiddleware, reportController);
 router.patch("/user/updateDeviceToken/:userId",authMiddleware, saveTokenController)
 router.post("/groove/support", authMiddleware, supportGrooveController)
 
+router.post("/chat/joinChat", authMiddleware, joinChatGroupController)
+router.post("/chat/sendMessage", authMiddleware, sendMessageController)
+router.post("/chat/leaveChat", authMiddleware, leaveChatGroupController)
 export default router;

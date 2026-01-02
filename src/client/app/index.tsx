@@ -17,6 +17,8 @@ import { TagGrooveScreen } from './screens/TagGrooveScreen';
 import * as Notifications from 'expo-notifications';
 import FetchGrooves from './componet/fetchGrooves';
 import Toast from 'react-native-toast-message';
+import { ChatRoom } from './screens/grooveChat';
+
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -39,7 +41,8 @@ export type Screen =
   | 'profile'
   | 'settings'
   | 'forgotpassword'
-  | 'resetpassword';
+  | 'resetpassword'
+  | 'chatRoom'
 
 interface Supporter {
   userId: string;
@@ -66,6 +69,14 @@ export default function App() {
   const [loading, setLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState<string | null>(null);
+  const [chatGroove, setChatGroove] = useState<GrooveTag | null>(null);
+
+ useEffect(() => {
+  if (chatGroove) {
+    console.log(chatGroove)
+    setCurrentScreen('chatRoom');
+  }
+}, [chatGroove]);
 
   useEffect(() => {
     const initApp = async () => {
@@ -114,6 +125,7 @@ export default function App() {
   };
 
   if (loading) return <ActivityIndicator size="large" style={{ flex: 1 }} />;
+console.log('SCREEN:', currentScreen, 'SELECTED:', selectedGroove?.id);
 
   return (
     <SettingsProvider>
@@ -164,10 +176,16 @@ export default function App() {
           onNavigateToTag={() => setCurrentScreen('tag')}
           onNavigateToProfile={() => setCurrentScreen('profile')}
           onNavigateToSettings={() => setCurrentScreen('settings')}
+    onJoinChat={(groove) => {
+  setSelectedGroove(groove);
+}}
+
+
           selectedGroove={selectedGroove}
           onSelectGroove={setSelectedGroove}
         />
       )}
+      
     </FetchGrooves>
   </LocationProvider>
 ) : null}
@@ -190,8 +208,11 @@ export default function App() {
                 setCurrentScreen('login');
               }}
             />
+            
           )}
-
+  {currentScreen === 'chatRoom' && selectedGroove && (
+  <ChatRoom initialMessages={[]} grooveId={selectedGroove.id} />
+)}
           <Toast />
         </View>
       </LocationProvider>

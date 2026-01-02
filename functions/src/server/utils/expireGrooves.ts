@@ -1,4 +1,5 @@
 import * as admin from 'firebase-admin';
+import { deleteGrooveChat } from './deleteChatGroup';
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -18,12 +19,11 @@ export const deleteExpiredGrooves = async () => {
     return;
   }
 
-  const batch = db.batch();
+  for (const doc of snapshot.docs) {
+    const grooveId = doc.id;
+    await deleteGrooveChat(grooveId);
 
-  snapshot.forEach(doc => {
-    batch.delete(doc.ref);
-  });
+    await doc.ref.delete();
+  }
 
-  await batch.commit();
-  console.log(`Deleted ${snapshot.size} expired grooves`);
 };

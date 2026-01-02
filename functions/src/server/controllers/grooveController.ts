@@ -5,6 +5,7 @@ import { getDistanceFromLatLonInM } from "../shared/geo";
 import { sendNearbyNotifications, sendSupportedGroovesNotifications, notifyOwnerOnSupport } from "../utils/notify";
 import axios from "axios";
 import { AuthRequest } from "../middleWare/middleWare";
+import { createGrooveChatGroup } from "../utils/createGroup";
 
 const RADIUS_METERS = 20;
 const IMPORTANT_SUPPORT_THRESHOLD = 3;
@@ -154,6 +155,7 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
     };
 
     const docRef = await db.collection("grooves").add(newGroove);
+    await createGrooveChatGroup(docRef.id, userId);
     const isImportant = await updateGrooveImportance(docRef);
     const notificationText = `${username} tagged a new groove: ${message || "Check it out!"}`;
 

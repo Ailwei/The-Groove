@@ -1,7 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import axios from "axios";
-import * as Location from "expo-location";
 import { ArrowLeft, MapPin, MessageSquare } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { Dimensions, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';

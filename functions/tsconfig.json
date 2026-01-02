@@ -1,11 +1,12 @@
 {
   "compilerOptions": {
-    "target": "ES2020",
     "module": "commonjs",
+    "target": "es2020",
     "strict": true,
     "esModuleInterop": true,
     "moduleResolution": "node",
-    "outDir": "dist"
+    "outDir": "lib"
   },
-  "include": ["./**/*.ts", "controllers"]
+  "include": ["src/server/**/*.ts"],
+  "exclude": ["node_modules", "**/node_modules/*"]
 }

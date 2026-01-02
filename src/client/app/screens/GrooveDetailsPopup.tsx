@@ -9,20 +9,20 @@ import Toast from 'react-native-toast-message';
 import { GrooveTag } from '..';
 import ReportModal from '../componet/reportModal';
 
-
 interface GrooveDetailsPopupProps {
   groove: GrooveTag;
   userLocation: { lat: number; lng: number } | null;
   onClose: () => void;
   onSupport?: (id: string) => void;
-
+  onJoinChat?: (groove: GrooveTag) => void;
 }
 
-export function GrooveDetailsPopup({ groove, onClose, userLocation }: GrooveDetailsPopupProps) {
+export function GrooveDetailsPopup({ groove, onClose, userLocation,   onJoinChat, }: GrooveDetailsPopupProps) {
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ userId: string } | null>(null);
   const [supported, setSupported] = useState(false);
   const [loadingSupport, setLoadingSupport] = useState(false);
+  const [joinChatRoom, setJoinChatrrom] = useState(false)
 
 
   useEffect(() => {
@@ -103,6 +103,37 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
       `https://www.google.com/maps/dir/?api=1&origin=${startLat},${startLng}&destination=${destLat},${destLng}&travelmode=driving`
     );
   };
+ const handleJoinChat = async () => {
+  if (!currentUser || !currentUser.userId || !groove?.id) return;
+console.log("handleJoinChat clicked", groove?.id, currentUser?.userId);
+
+  try {
+    const token = await AsyncStorage.getItem("token");
+    if (!token) return;
+
+    const res = await axios.post(
+      `http://192.168.18.29:3000/api/chat/joinChat`,
+      { grooveId: groove.id },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    if (res.data.success) {
+      onJoinChat?.(groove);
+      console.log("handleJoinChat clicked", groove?.id, currentUser?.userId);
+
+    }
+
+  } catch (err: any) {
+    const message = err.response?.data?.error || err.message || "Failed to join chat";
+    Toast.show({
+      type: "error",
+      text1: "Join Chat Failed",
+      text2: message,
+    });
+  }
+};
+;
+
   const handleSupport = async () => {
 
   if (!userLocation) {
@@ -178,6 +209,7 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
       { grooveId: groove.id, reason },
       { headers: { Authorization: `Bearer ${token}` } }
     );
+console.log("handleJoinChat clicked", groove?.id, currentUser?.userId);
 
     Toast.show({
       type: 'success',
@@ -239,18 +271,24 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
         {currentUser && currentUser.userId && groove && groove.userId && currentUser.userId !== groove.userId && (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
             <TouchableOpacity
-              style={[styles.navigateButton, { backgroundColor: '#8b5cf6', flex: 1, marginRight: 8 }]}
+            style={[styles.navigateButton, { backgroundColor: '#5cf69aff', flex: 1, marginRight: 8 }]}
+            onPress={handleJoinChat}
+            >
+             <Text>Join Chat</Text> 
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.navigateButton, { backgroundColor: '#f65cacff', flex: 1, marginRight: 8 }]}
               onPress={handleSupport}
               disabled={supported || loadingSupport}
             >
-              <Text style={styles.navigateText}>👍 Support</Text>
+              <Text style={styles.navigateText}> Support</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.navigateButton, { backgroundColor: '#ef4444', flex: 1, marginLeft: 8 }]}
               onPress={() => setReportModalVisible(true)}
             >
-              <Text style={styles.navigateText}>🚩 Report</Text>
+              <Text style={styles.navigateText}> Report</Text>
             </TouchableOpacity>
           </View>
         )}

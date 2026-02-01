@@ -163,6 +163,12 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
       coordinates: { lat, lng },
       notificationMsg: notificationText,
     });
+    return res.status(201).json({
+  action: "CREATED_NEW",
+  message: "Groove created successfully",
+  grooveId: docRef.id,
+});
+
 
   } catch (error: any) {
     console.error("tagGrooveController error:", error);
@@ -185,6 +191,7 @@ export const getGroovesController = async (_req: any, res: Response) => {
       grooves.push({
         id: doc.id,
         ...data,
+        chatId: data.chatId || null,
         supportCount,
       });
     });

@@ -9,12 +9,14 @@ import Toast from 'react-native-toast-message';
 import { GrooveTag } from '..';
 import { GrooveDetailsPopup } from './GrooveDetailsPopup';
 import { useLocation } from '../contecxt/LocationContext';
+import ChatIconButton from '../componet/chatIcon';
 
 interface HomeScreenProps {
   grooveTags: GrooveTag[];
   onNavigateToTag: () => void;
   onNavigateToProfile: () => void;
   onNavigateToSettings: () => void;
+  onOpenGroupChatList: () => void;
   selectedGroove: GrooveTag | null;
   onSelectGroove: (groove: GrooveTag | null) => void;
   onJoinChat: (groove: GrooveTag | null) => void;
@@ -27,6 +29,7 @@ export function GrooveMapScreen({
   onNavigateToTag,
   onNavigateToProfile,
   onNavigateToSettings,
+  onOpenGroupChatList,
   selectedGroove,
   onSelectGroove,
   onJoinChat,
@@ -191,6 +194,11 @@ export function GrooveMapScreen({
             )}
 
 
+<ChatIconButton
+    onPress={onOpenGroupChatList}
+   unreadCount={5}
+/>
+
             <TouchableOpacity style={[
               styles.tagButton,
               { bottom: 5 + insets.bottom }
@@ -200,6 +208,7 @@ export function GrooveMapScreen({
             </TouchableOpacity>
             {selectedGroove && (
               <GrooveDetailsPopup
+
                 groove={selectedGroove}
                 onClose={() => onSelectGroove(null)}
                  onJoinChat={onJoinChat} 

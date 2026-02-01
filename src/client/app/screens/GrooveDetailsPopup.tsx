@@ -22,7 +22,7 @@ export function GrooveDetailsPopup({ groove, onClose, userLocation,   onJoinChat
   const [currentUser, setCurrentUser] = useState<{ userId: string } | null>(null);
   const [supported, setSupported] = useState(false);
   const [loadingSupport, setLoadingSupport] = useState(false);
-  const [joinChatRoom, setJoinChatrrom] = useState(false)
+const [joining, setJoining] = useState(false);
 
 
   useEffect(() => {
@@ -104,35 +104,38 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
     );
   };
  const handleJoinChat = async () => {
-  if (!currentUser || !currentUser.userId || !groove?.id) return;
-console.log("handleJoinChat clicked", groove?.id, currentUser?.userId);
+  if (!currentUser?.userId || !groove?.id || !groove.chatId) return;
+
+  setJoining(true);
 
   try {
     const token = await AsyncStorage.getItem("token");
     if (!token) return;
 
     const res = await axios.post(
-      `http://192.168.18.29:3000/api/chat/joinChat`,
-      { grooveId: groove.id },
+      "http://192.168.18.29:3000/api/chat/joinChat",
+      { grooveId: groove.id, chatId: groove.chatId },
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
-    if (res.data.success) {
-      onJoinChat?.(groove);
-      console.log("handleJoinChat clicked", groove?.id, currentUser?.userId);
-
+    if (res.data.alreadyJoined) {
+      Toast.show({
+        type: "success",
+        text1: "Welcome back 👋",
+      });
     }
+    onJoinChat?.(groove);
 
   } catch (err: any) {
-    const message = err.response?.data?.error || err.message || "Failed to join chat";
     Toast.show({
       type: "error",
-      text1: "Join Chat Failed",
-      text2: message,
+      text1: "Failed to join chat",
+      text2: err.response?.data?.error || "Something went wrong",
     });
+  } finally {
+    setJoining(false);
   }
 };
-;
 
   const handleSupport = async () => {
 
@@ -273,6 +276,7 @@ console.log("handleJoinChat clicked", groove?.id, currentUser?.userId);
             <TouchableOpacity
             style={[styles.navigateButton, { backgroundColor: '#5cf69aff', flex: 1, marginRight: 8 }]}
             onPress={handleJoinChat}
+            disabled={joining}
             >
              <Text>Join Chat</Text> 
             </TouchableOpacity>

@@ -3,7 +3,6 @@
     "name": "TheGroove",
     "slug": "thegroove",
     "scheme": "thegroove",
-
     "android": {
       "package": "com.ailwei.thegroove",
       "permissions": [
@@ -11,11 +10,13 @@
         "ACCESS_COARSE_LOCATION"
       ]
     },
-
     "ios": {
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "TheGroove uses your location to show nearby grooves and send notifications."
       }
-    }
+    },
+    "plugins": [
+      "expo-router"
+    ]
   }
 }

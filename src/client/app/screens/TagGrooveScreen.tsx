@@ -80,6 +80,15 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
       Toast.show({ type: "error", text1: "User not found" });
       return;
     }
+    if (!message.trim()) {
+  Toast.show({
+    type: 'error',
+    text1: 'Message required',
+    text2: 'Please enter a message before submitting.',
+  });
+  return;
+}
+
     const now = new Date();
 
     const fixedStart = new Date(startTime);
@@ -107,7 +116,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
       onSubmit({
         coordinates: submitCoords,
         vibe,
-        message: message.trim() || undefined,
+        message: message.trim(),
         location,
         startTime: fixedStart,
         endTime: fixedEnd,
@@ -119,7 +128,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
           lat: submitCoords.lat,
           lng: submitCoords.lng,
           vibe,
-          message: message.trim() || null,
+          message: message.trim(),
           location,
           startTime: fixedStart.toISOString(),
           endTime: fixedEnd.toISOString(),
@@ -217,22 +226,32 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
           </View>
         </View>
 
-        {/* Optional Message */}
         <View style={styles.field}>
-          <Text style={styles.label}>Optional Message</Text>
-          <View style={styles.inputWrapper}>
-            <MessageSquare width={16} height={16} color="#6b7280" style={styles.inputIconTop} />
-            <TextInput
-              style={[styles.input, { height: 100 }]}
-              value={message}
-              onChangeText={setMessage}
-              placeholder="e.g., Shisanyama is pumping rn!"
-              multiline
-              maxLength={100}
-            />
-          </View>
-          <Text style={[styles.description, { textAlign: 'right' }]}>{message.length}/100</Text>
-        </View>
+  <Text style={styles.label}>
+    Message <Text style={{ color: 'red' }}>*</Text>
+  </Text>
+
+  <View style={styles.inputWrapper}>
+    <MessageSquare
+      width={16}
+      height={16}
+      color="#6b7280"
+      style={styles.inputIconTop}
+    />
+    <TextInput
+      style={[styles.input, { height: 100 }]}
+      value={message}
+      onChangeText={setMessage}
+      placeholder="Enter your message"
+      multiline
+      maxLength={100}
+    />
+  </View>
+
+  <Text style={[styles.description, { textAlign: 'right' }]}>
+    {message.length}/100
+  </Text>
+</View>
 
         {/* Start/End Time */}
         <View style={styles.field}>
@@ -273,6 +292,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
       <TouchableOpacity
         style={[styles.submitButton, { marginBottom: insets.bottom + 5 }]}
         onPress={handleSubmit}
+        disabled={!message.trim}
       >
         <Text style={styles.submitText}>Drop The Groove</Text>
       </TouchableOpacity>

@@ -10,6 +10,7 @@ import { LoginScreen } from './screens/LoginScreen';
 import { OnboardingScreens } from './screens/OnboardingScreen';
 import { ProfileScreen } from './screens/ProfileScreen';
 import ResetPasswordScreen from './screens/ResetPasswordScreen';
+import GroupChatList from './screens/grouphatLists';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { SignupScreen } from './screens/SignUp';
 import { SplashScreen } from './screens/SplashScreen';
@@ -43,6 +44,7 @@ export type Screen =
   | 'forgotpassword'
   | 'resetpassword'
   | 'chatRoom'
+  | 'chatGroupList'
 
 interface Supporter {
   userId: string;
@@ -60,6 +62,7 @@ export interface GrooveTag {
   supportCount?: number;
   userId: string;
   supporters?: Supporter[];
+  chatId?: string | null;
 }
 
 export default function App() {
@@ -70,6 +73,7 @@ export default function App() {
   const [userId, setUserId] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState<string | null>(null);
   const [chatGroove, setChatGroove] = useState<GrooveTag | null>(null);
+  const [totalUnread, setTotalUnread] = useState(0);
 
  useEffect(() => {
   if (chatGroove) {
@@ -124,8 +128,9 @@ export default function App() {
     setCurrentScreen('home');
   };
 
+useEffect(() => {
+}, [currentScreen]);
   if (loading) return <ActivityIndicator size="large" style={{ flex: 1 }} />;
-console.log('SCREEN:', currentScreen, 'SELECTED:', selectedGroove?.id);
 
   return (
     <SettingsProvider>
@@ -167,28 +172,27 @@ console.log('SCREEN:', currentScreen, 'SELECTED:', selectedGroove?.id);
             <OnboardingScreens onComplete={handleOnboardingComplete} />
           )}
 
-         {currentScreen === 'home' && userId ? (
-  <LocationProvider>
-    <FetchGrooves userId={userId}>
-      {(grooveTags) => (
-        <GrooveMapScreen
-          grooveTags={grooveTags}
-          onNavigateToTag={() => setCurrentScreen('tag')}
-          onNavigateToProfile={() => setCurrentScreen('profile')}
-          onNavigateToSettings={() => setCurrentScreen('settings')}
-    onJoinChat={(groove) => {
-  setSelectedGroove(groove);
-}}
-
-
-          selectedGroove={selectedGroove}
-          onSelectGroove={setSelectedGroove}
-        />
-      )}
-      
-    </FetchGrooves>
-  </LocationProvider>
+      {currentScreen === 'home' && userId ? (
+  <FetchGrooves userId={userId}>
+    {(grooveTags) => (
+      <GrooveMapScreen
+        grooveTags={grooveTags}
+        onNavigateToTag={() => setCurrentScreen('tag')}
+        onNavigateToProfile={() => setCurrentScreen('profile')}
+        onNavigateToSettings={() => setCurrentScreen('settings')}
+        onOpenGroupChatList={() => setCurrentScreen('chatGroupList')}
+        onJoinChat={(groove) => {
+          if (!groove) return;
+          setChatGroove(groove);
+          setSelectedGroove(null);
+        }}
+        selectedGroove={selectedGroove}
+        onSelectGroove={setSelectedGroove}
+      />
+    )}
+  </FetchGrooves>
 ) : null}
+
 
 
           {currentScreen === 'tag' && (
@@ -210,8 +214,21 @@ console.log('SCREEN:', currentScreen, 'SELECTED:', selectedGroove?.id);
             />
             
           )}
-  {currentScreen === 'chatRoom' && selectedGroove && (
-  <ChatRoom initialMessages={[]} grooveId={selectedGroove.id} />
+          {currentScreen === 'chatGroupList' && userId && (
+  <GroupChatList
+    onBack={() => setCurrentScreen('home')}
+    onOpenChat={(group) => {
+      setChatGroove({
+        id: group.grooveId,
+        chatId: group.chatId,
+      } as any);
+    }}
+  />
+)}
+
+
+  {currentScreen === 'chatRoom' && chatGroove && (
+  <ChatRoom initialMessages={[]} grooveId={chatGroove.id} onBack={() => setCurrentScreen('home')} chatId={chatGroove.chatId ?? ''}/>
 )}
           <Toast />
         </View>

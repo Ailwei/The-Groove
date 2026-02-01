@@ -37,6 +37,7 @@ export default function FetchGrooves({ userId, children }: FetchGroovesProps) {
           endTime: new Date(g.expiresAt._seconds * 1000),
           supportCount: g.supporters?.length || 0,
           userId: g.userId,
+          chatId: g.chatId || null,
         }));
 
         setGrooveTags(formattedGrooves);

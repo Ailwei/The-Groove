@@ -1,5 +1,5 @@
 import * as admin from 'firebase-admin';
-import { deleteGrooveChat } from './deleteChatGroup';
+import { deleteGrooveAndData } from './deleteChatGroup';
 
 if (!admin.apps.length) {
   admin.initializeApp();
@@ -15,15 +15,14 @@ export const deleteExpiredGrooves = async () => {
     .where('expiresAt', '<', now)
     .get();
 
-  if (snapshot.empty) {
-    return;
-  }
+  if (snapshot.empty) return;
 
-  for (const doc of snapshot.docs) {
-    const grooveId = doc.id;
-    await deleteGrooveChat(grooveId);
-
-    await doc.ref.delete();
-  }
-
+  await Promise.all(
+    snapshot.docs.map(doc =>
+      deleteGrooveAndData(doc.id)
+        .catch(err => {
+          console.error(`Failed to delete groove ${doc.id}`, err);
+        })
+    )
+  );
 };

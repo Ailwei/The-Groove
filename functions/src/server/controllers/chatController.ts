@@ -11,7 +11,7 @@ export const joinChatGroupController = async (
 ) => {
   try {
     const { grooveId, chatId } = req.body;
-    const userId = req.user.userId;
+    const userId = req.user?.userId;
 
     console.log("grooveid", grooveId, "chatid", chatId)
 

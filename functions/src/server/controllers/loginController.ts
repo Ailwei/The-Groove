@@ -3,7 +3,8 @@ import { db } from "../firebase/firestore";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 
-const JWT_SECRET = process.env.JWT_SECRET || "8486478nhgurhgerfuh347yt38vgv3bgv34tyv384t3";
+import {getJwtSecret} from "../config/secrets";
+
 
 export const loginController = async (req: Request, res: Response) => {
   const { email, password } = req.body;
@@ -26,12 +27,12 @@ export const loginController = async (req: Request, res: Response) => {
     if (!isPasswordValid) {
       return res.status(401).json({ error: "Invalid password" });
     }
-
-    const token = jwt.sign(
-      { userId: userDoc.id, email: userData.email ,  username: userData.username, },
-      JWT_SECRET,
-      { expiresIn: "7d" }
-    );
+    const JWT_SECRET = getJwtSecret();
+const token = jwt.sign(
+  { userId: userDoc.id, email: userData.email, username: userData.username },
+  JWT_SECRET,
+  { expiresIn: "7d" }
+);
 
     return res.status(200).json({
       message: "Login successful",

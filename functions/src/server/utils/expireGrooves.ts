@@ -1,28 +1,20 @@
-import * as admin from 'firebase-admin';
-import { deleteGrooveAndData } from './deleteChatGroup';
-
-if (!admin.apps.length) {
-  admin.initializeApp();
-}
-
-const db = admin.firestore();
+import { db, admin } from "../firebase/firestore";
 
 export const deleteExpiredGrooves = async () => {
-  const now = new Date();
+  const now = admin.firestore.Timestamp.now();
+  const snapshot = await db.collection("grooves").where("expiresAt", "<", now).get();
 
-  const snapshot = await db
-    .collection('grooves')
-    .where('expiresAt', '<', now)
-    .get();
+  for (const doc of snapshot.docs) {
+    const grooveId = doc.id;
 
-  if (snapshot.empty) return;
+    const chatSnap = await db.collection("groove_chats").where("grooveId", "==", grooveId).get();
+    chatSnap.forEach(c => c.ref.delete());
 
-  await Promise.all(
-    snapshot.docs.map(doc =>
-      deleteGrooveAndData(doc.id)
-        .catch(err => {
-          console.error(`Failed to delete groove ${doc.id}`, err);
-        })
-    )
-  );
+    const supportSnap = await db.collection("supports").where("grooveId", "==", grooveId).get();
+    supportSnap.forEach(s => s.ref.delete());
+
+    await db.collection("grooves").doc(grooveId).delete();
+  }
+
+  console.log(`Deleted ${snapshot.size} expired grooves.`);
 };

@@ -42,6 +42,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
   const [currentId, setCurrentId] = useState<string | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const [loading, setLoading] = useState(true);
+  const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
 
   const insets = useSafeAreaInsets();
@@ -62,7 +63,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
         if (!token) return;
 
         const res = await axios.get(
-          `http://192.168.18.29:3000/api/chat/fetchChats?grooveId=${grooveId}&chatId=${chatId}`,
+          `${BASE_URL}/api/chat/fetchChats?grooveId=${grooveId}&chatId=${chatId}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 
@@ -101,7 +102,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
       }
 
       const res = await axios.post(
-        'http://192.168.18.29:3000/api/chat/sendMessage',
+        `${BASE_URL}/api/chat/sendMessage`,
         {
           grooveId,
           text: newMessage,
@@ -136,7 +137,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
     }
 
     await axios.post(
-      "http://192.168.18.29:3000/api/chat/leaveChat",
+      `${BASE_URL}/api/chat/leaveChat`,
       { grooveId, chatId },
       {
         headers: {

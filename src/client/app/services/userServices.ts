@@ -9,9 +9,10 @@ export async function sendLocationToServer(coords: { lat: number; lng: number })
       console.warn("No auth token found, skipping location update");
       return;
     }
+    const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
     await axios.patch(
-      "http://192.168.18.29:3000/api/user/upldatelocation",
+      `${BASE_URL}/api/user/upldatelocation`,
       { location: coords },
       { headers: { Authorization: `Bearer ${token}` } }
     );

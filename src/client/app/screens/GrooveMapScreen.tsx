@@ -40,8 +40,7 @@ export function GrooveMapScreen({
   const { location: userLocation, loading: locationLoading } = useLocation();
   const [isMapReady, setIsMapReady] = useState(false);
   const [tracksViewChanges, setTracksViewChanges] = useState(true);
-
- 
+  const [headerHeight, setHeaderHeight] = useState(0);
   
    useEffect(() => {
     const timer = setTimeout(() => {
@@ -78,7 +77,10 @@ export function GrooveMapScreen({
     <Provider>
       <SafeAreaView style={styles.container}>
 
-        <View style={styles.header}>
+        <View
+  style={styles.header}
+  onLayout={(e) => setHeaderHeight(e.nativeEvent.layout.height)}
+>
           <Text style={styles.title}>THE GROOOOOVE</Text>
           <View style={styles.headerButtons}>
             <View style={{ flexDirection: 'row' }}>
@@ -95,7 +97,10 @@ export function GrooveMapScreen({
 
           </View>
         </View>
-        <View style={styles.legend} pointerEvents="none">
+        <View
+style={[styles.legend, { top: insets.top + headerHeight + 12}]}
+  pointerEvents="none"
+>
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: '#ef4444' }]} />
             <Text style={styles.legendText}>Very Busy</Text>
@@ -158,9 +163,9 @@ export function GrooveMapScreen({
                       latitude: tag.coordinates.lat,
                       longitude: tag.coordinates.lng,
                     }}
-                    anchor={{ x: 0.5, y: 1 }}
+                    anchor={{ x: 0, y: 0.9}}
                     tracksViewChanges={tracksViewChanges}
-                    zIndex={10}
+                    zIndex={20}
                     pointerEvents="none"
                   >
 
@@ -194,10 +199,17 @@ export function GrooveMapScreen({
             )}
 
 
-<ChatIconButton
-    onPress={onOpenGroupChatList}
-   unreadCount={5}
-/>
+  <ChatIconButton
+          onPress={onOpenGroupChatList}
+          unreadCount={5}
+          style={{
+            position: "absolute",
+            bottom: 5 + insets.bottom,
+            left: 20,
+            zIndex: 15,
+          }}
+        />
+
 
             <TouchableOpacity style={[
               styles.tagButton,
@@ -281,7 +293,6 @@ const styles = StyleSheet.create({
 
   legend: {
     position: 'absolute',
-    top: 120,
     left: 16,
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -322,6 +333,7 @@ const styles = StyleSheet.create({
     color: '#444',
     fontWeight: '600',
   },
+  
 
 
 

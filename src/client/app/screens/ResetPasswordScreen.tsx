@@ -24,6 +24,9 @@ export function ResetPasswordScreen({ email, onBackToLogin }: ResetPasswordScree
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
+
+  const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
   const handleResetPassword = async () => {
     if (!otp || !password || !confirmPassword) {
       Toast.show({ type: "error", text1: "All fields are required" });
@@ -37,7 +40,7 @@ export function ResetPasswordScreen({ email, onBackToLogin }: ResetPasswordScree
 
     try {
       setLoading(true);
-      const res = await axios.post("http://192.168.18.29:3000/api/user/resetPassword", {
+      const res = await axios.post(`${BASE_URL}/api/user/resetPassword`, {
         email,
         otp,
         newPassword: password,

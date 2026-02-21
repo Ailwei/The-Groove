@@ -28,6 +28,9 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
   const [showEndPicker, setShowEndPicker] = useState(false);
   const insets = useSafeAreaInsets();
 
+
+  const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
   const vibeOptions: { value: GrooveTag['vibe']; label: string; color: string; emoji: string }[] = [
     { value: 'very-busy', label: 'Very Busy', color: '#ef4444', emoji: '🔥' },
     { value: 'busy', label: 'Busy', color: '#f97316', emoji: '🟠' },
@@ -123,7 +126,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
         userId
       });
       const response = await axios.post(
-        "http://192.168.18.29:3000/api/grooves/tag",
+      `${BASE_URL}/api/grooves/tag`,
         {
           lat: submitCoords.lat,
           lng: submitCoords.lng,
@@ -172,7 +175,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
   useEffect(() => {
     Toast.show({
       type: 'info',
-      text1: '💡 Your tagged spot will appear on the map',
+      text1: 'Your tagged spot will appear on the map',
       position: 'top',
       visibilityTime: 2000,
       autoHide: true
@@ -189,7 +192,6 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
       </View>
 
       <ScrollView style={styles.form} contentContainerStyle={{ paddingBottom: 24 }}>
-        {/* Location Field */}
         <View style={styles.field}>
           <Text style={styles.label}>Location</Text>
           <View style={styles.inputWrapper}>
@@ -204,7 +206,6 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
           <Text style={styles.description}>Auto-filled from your current location</Text>
         </View>
 
-        {/* Vibe Selection */}
         <View style={styles.field}>
           <Text style={styles.label}>Select Vibe</Text>
           <View style={styles.vibeGrid}>
@@ -253,7 +254,6 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
   </Text>
 </View>
 
-        {/* Start/End Time */}
         <View style={styles.field}>
           {showStartPicker && (
             <DateTimePicker

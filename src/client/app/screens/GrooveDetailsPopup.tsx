@@ -24,7 +24,7 @@ export function GrooveDetailsPopup({ groove, onClose, userLocation,   onJoinChat
   const [loadingSupport, setLoadingSupport] = useState(false);
 const [joining, setJoining] = useState(false);
 
-
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
   useEffect(() => {
     const loadUser = async () => {
       const token = await AsyncStorage.getItem("token");
@@ -113,7 +113,7 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
     if (!token) return;
 
     const res = await axios.post(
-      "http://192.168.18.29:3000/api/chat/joinChat",
+      `${BASE_URL}/api/chat/joinChat`,
       { grooveId: groove.id, chatId: groove.chatId },
       { headers: { Authorization: `Bearer ${token}` } }
     );
@@ -159,7 +159,7 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
      if (!token) return;
 
     const res = await axios.post(
-      'http://192.168.18.29:3000/api/groove/support',
+      `${BASE_URL}/api/groove/support`,
       {
         grooveId: groove.id,
         userLat: userLocation.lat,
@@ -208,7 +208,7 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
 
   try {
     const res = await axios.post(
-      'http://192.168.18.29:3000/api/groove/report',
+      `${BASE_URL}/api/groove/report`,
       { grooveId: groove.id, reason },
       { headers: { Authorization: `Bearer ${token}` } }
     );

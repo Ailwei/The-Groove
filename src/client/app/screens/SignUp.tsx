@@ -24,6 +24,8 @@ export function SignupScreen({ onSignupSuccess, onNavigateToLogin }: SignupScree
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
   const handleSignup = async () => {
     if (!username || !email || !password) {
       Toast.show({ type: 'error', text1: 'All fields are required' });
@@ -32,7 +34,7 @@ export function SignupScreen({ onSignupSuccess, onNavigateToLogin }: SignupScree
 
     setLoading(true);
     try {
-      const res = await axios.post('http://192.168.18.29:3000/api/users/create', {
+      const res = await axios.post(`${BASE_URL}/api/users/create`, {
         username,
         email,
         password,

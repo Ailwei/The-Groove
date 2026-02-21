@@ -14,6 +14,8 @@ export default function FetchGrooves({ userId, children }: FetchGroovesProps) {
   const [grooveTags, setGrooveTags] = useState<GrooveTag[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
   useEffect(() => {
     if (!userId) return;
 
@@ -22,7 +24,7 @@ export default function FetchGrooves({ userId, children }: FetchGroovesProps) {
         const token = await AsyncStorage.getItem('token');
         if (!token) return;
 
-        const res = await axios.get('http://192.168.18.29:3000/api/grooves', {
+        const res = await axios.get(`${BASE_URL}/api/grooves`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 

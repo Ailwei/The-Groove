@@ -11,10 +11,13 @@ const { width } = Dimensions.get("window");
 type ChatIconButtonProps = {
   onPress: () => void;
   showLabel?: boolean;
+  unreadCount?: number;
+  style: any;
 };
 
 const ChatIconButton: React.FC<ChatIconButtonProps> = ({
   onPress,
+  style,
   showLabel = true,
 }) => {
   const [unreadCount, setUnreadCount] = useState(0);
@@ -22,6 +25,8 @@ const ChatIconButton: React.FC<ChatIconButtonProps> = ({
 
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
 
+
+  const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
   useEffect(() => {
     AsyncStorage.getItem("userId").then((id) => setCurrentUserId(id));
   }, []);
@@ -48,17 +53,15 @@ const ChatIconButton: React.FC<ChatIconButtonProps> = ({
       const token = await AsyncStorage.getItem("token");
       if (!token || !currentUserId) return;
 
-      const res = await axios.get("http://192.168.18.29:3000/api/chat/groups", {
+      const res = await axios.get(`${BASE_URL}/api/chat/groups`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
       const chats = res.data.chats || [];
 
-      // Only sum unread messages not sent by the current user
       const totalUnread = chats.reduce((sum: number, chat: any) => {
         const messagesFromOthers = chat.unreadCountFromOthers ?? 0;
 
-        // fallback: if API only sends unreadCount, assume it's from others
         return sum + (messagesFromOthers || (chat.unreadCount || 0));
       }, 0);
 
@@ -80,14 +83,14 @@ const ChatIconButton: React.FC<ChatIconButtonProps> = ({
   }, [currentUserId]);
 
   return (
-    <TouchableOpacity
+     <TouchableOpacity
       onPress={onPress}
+      style={[styles.iconButton, style]}
       activeOpacity={0.85}
-      style={styles.fab}
     >
       <MessageCircle size={22} color="#fff" />
 
-      {showLabel && <Text style={styles.submitText}>Chats</Text>}
+      {showLabel && <Text style={styles.submitText}>My Chats</Text>}
 
       {unreadCount > 0 && (
         <Animated.View
@@ -103,14 +106,13 @@ const ChatIconButton: React.FC<ChatIconButtonProps> = ({
 export default ChatIconButton;
 
 const styles = StyleSheet.create({
-  fab: {
+  iconButton: {
     position: "absolute",
     bottom: 28,
     left: 20,
-    width: width * 0.35,
     flexDirection: "row",
     alignItems: "center",
-    gap: 20,
+    gap: 10,
     backgroundColor: "#8b5cf6",
     paddingVertical: 14,
     paddingHorizontal: 18,

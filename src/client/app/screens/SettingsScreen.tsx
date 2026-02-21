@@ -26,6 +26,8 @@ const { location: coords, loading } = useLocation();  const {
     setNotificationFrequency
   } = useContext(SettingsContext);
 
+  const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
   const handleDeleteAccount = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -49,7 +51,7 @@ const { location: coords, loading } = useLocation();  const {
             onPress: async () => {
               try {
                 await axios.delete(
-                  `http://192.168.18.29:3000/api/user/deleteAccount/${userId}`,
+                  `${BASE_URL}/api/user/deleteAccount/${userId}`,
                   { headers: { Authorization: `Bearer ${token}` } }
                 );
 
@@ -116,7 +118,7 @@ useEffect(() => {
     if (!userId || !token) return;
 
     await axios.patch(
-      `http://192.168.18.29:3000/api/updateSettings/${userId}`,
+      `${BASE_URL}/api/updateSettings/${userId}`,
       newSettings,
       { headers: { Authorization: `Bearer ${token}` } }
     );

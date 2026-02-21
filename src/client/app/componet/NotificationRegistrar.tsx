@@ -7,7 +7,7 @@ import SettingsContext from '../contecxt/settingContext';
 
 export default function NotificationRegistrar() {
   const { notificationsEnabled, notificationFrequency } = useContext(SettingsContext);
-
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
   useEffect(() => {
     let unsubscribeOnMessage: (() => void) | undefined;
     let unsubscribeTokenRefresh: (() => void) | undefined;
@@ -28,7 +28,7 @@ export default function NotificationRegistrar() {
 
       try {
         await axios.patch(
-          `http://192.168.18.29:3000/api/user/updateDeviceToken/${userId}`,
+          `${BASE_URL}/api/user/updateDeviceToken/${userId}`,
           { deviceToken: token },
           { headers: { Authorization: `Bearer ${authToken}` } }
         );

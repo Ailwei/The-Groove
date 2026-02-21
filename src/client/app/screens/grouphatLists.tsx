@@ -7,10 +7,12 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { ArrowLeft } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Toast from "react-native-toast-message";
+import { white } from "react-native-paper/lib/typescript/styles/themes/v2/colors";
 
 interface ChatGroup {
   grooveId: string;
@@ -31,6 +33,7 @@ const GroupChatList = ({ onBack, onOpenChat }: GroupChatListProps) => {
   const [chatGroups, setChatGroups] = useState<ChatGroup[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
   useEffect(() => {
     loadChats();
   }, []);
@@ -41,7 +44,7 @@ const GroupChatList = ({ onBack, onOpenChat }: GroupChatListProps) => {
       if (!token) return;
 
       const res = await axios.get(
-        "http://192.168.18.29:3000/api/chat/groups",
+        `${BASE_URL}/api/chat/groups`,
         {
           headers: { Authorization: `Bearer ${token}` },
         }
@@ -70,7 +73,7 @@ const GroupChatList = ({ onBack, onOpenChat }: GroupChatListProps) => {
       const token = await AsyncStorage.getItem("token");
       if (token) {
         await axios.post(
-          "http://192.168.18.29:3000/api/chat/markAsRead",
+          `${BASE_URL}/api/chat/markAsRead`,
           { grooveId: chat.grooveId, chatId: chat.chatId },
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -83,7 +86,7 @@ const GroupChatList = ({ onBack, onOpenChat }: GroupChatListProps) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
@@ -136,7 +139,7 @@ const GroupChatList = ({ onBack, onOpenChat }: GroupChatListProps) => {
             </TouchableOpacity>
           ))}
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -144,15 +147,16 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#f1f5f9",
-    padding: 16,
   },
 
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-
+ header: {
+  flexDirection: "row",
+  alignItems: "center",
+  padding: 16,                    
+  borderBottomWidth: 1,           
+  borderBottomColor: "#e5e7eb", 
+  backgroundColor: "#fff",         
+},
   backButton: {
     padding: 4,
   },

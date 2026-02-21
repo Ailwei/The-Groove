@@ -37,10 +37,10 @@ export function LoginScreen({ onLoginSuccess, onNavigateToSignup , onNavigateToF
       Toast.show({ type: 'error', text1: 'Email and password are required' });
       return;
     }
-
+const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
     setLoading(true);
     try {
-      const res = await axios.post('http://192.168.18.29:3000/api/users/login', {
+      const res = await axios.post(`${BASE_URL}/api/users/login`, {
         email,
         password,
       });

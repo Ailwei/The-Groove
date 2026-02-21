@@ -22,6 +22,8 @@ export function ForgotPasswordScreen({ onBackToLogin, onNavigateToReset }: Forgo
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
+
   const handleForgotPassword = async () => {
   if (!email) {
     Toast.show({ type: "error", text1: "Email is required" });
@@ -30,7 +32,7 @@ export function ForgotPasswordScreen({ onBackToLogin, onNavigateToReset }: Forgo
 
   try {
     setLoading(true);
-    const res = await axios.post("http://192.168.18.29:3000/api/user/forgotPassword", { email });
+    const res = await axios.post(`${BASE_URL}/api/user/forgotPassword`, { email });
     Toast.show({ type: "success", text1: res.data.message });
 
     onNavigateToReset(email);

@@ -24,13 +24,14 @@ export function ProfileScreen({ onBack, onNavigateToSettings }: ProfileScreenPro
   const [profile, setProfile] = React.useState<ProfileData | null>(null);
   const [userTags, setUserTags] = React.useState<GrooveTag[]>([]);
 
+  const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
   React.useEffect(() => {
     const fetchProfile = async () => {
       const token = await AsyncStorage.getItem('token');
       if (!token) return;
 
       try {
-        const res = await axios.get('http://192.168.18.29:3000/api/user/profile', {
+        const res = await axios.get(`${BASE_URL}/api/user/profile`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -57,7 +58,7 @@ export function ProfileScreen({ onBack, onNavigateToSettings }: ProfileScreenPro
       if (!token) return;
 
       try {
-        const res = await axios.get('http://192.168.18.29:3000/api/grooves/userRecentGroove', {
+        const res = await axios.get(`${BASE_URL}/api/grooves/userRecentGroove`, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -82,7 +83,7 @@ export function ProfileScreen({ onBack, onNavigateToSettings }: ProfileScreenPro
     if (!token) return;
 
     try {
-      await axios.delete('http://192.168.18.29:3000/api/grooves/delete', {
+      await axios.delete(`${BASE_URL}/api/grooves/delete`, {
         headers: { Authorization: `Bearer ${token}` },
         data: { grooveId },
       });

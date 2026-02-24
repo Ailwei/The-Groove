@@ -15,13 +15,14 @@ import { ArrowLeft } from "lucide-react-native";
 import Toast from "react-native-toast-message";
 import axios from "axios";
 import { getColorForUserInGroup } from "../utilsF/chatColors";
-
+import { DeleteMessageButton } from "../componet/deleteMessage";
 interface Message {
   id: string;
   userId: string;
   senderName?: string;
   text: string;
   createdAt: Date;
+  style?: object;
 }
 
 interface ChatRoomProps {
@@ -166,7 +167,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={onBack}>
+         <TouchableOpacity style={styles.backButton} onPress={onBack}>
           <ArrowLeft width={24} height={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Chat Room</Text>
@@ -204,26 +205,42 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
 ) : (
   messages.map((msg) => {
     const isMyMessage = msg.userId === currentId;
-
+const handleLocalDelete = (messageId: string) => {
+  setMessages(prev => prev.filter(msg => msg.id !== messageId));
+};
   return (
       <View
         key={msg.id}
         style={[
           styles.message,
           isMyMessage ? styles.myMessage : styles.otherMessage,
+          { position: "relative" }
         ]}
       >
+        
         <Text
           style={[
             styles.user,
             {
               color: isMyMessage
-                ? "#1453b7"
+                ? "#b71414"
                 : getColorForUserInGroup(msg.userId, grooveId),
             },
           ]}
         >
           {isMyMessage ? "Me" : msg.senderName || msg.userId}
+          
+         {isMyMessage && (
+        
+        <DeleteMessageButton
+          userId={currentId!}
+          grooveId={grooveId}
+          chatId={chatId}
+          messageId={msg.id}
+          messages={messages}
+          onDeleteSuccess={handleLocalDelete}
+        />
+      )}
         </Text>
 
         <View style={styles.messageRow}>
@@ -235,6 +252,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
             })}
           </Text>
         </View>
+       
       </View>
     );
   })
@@ -258,9 +276,9 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#f1f5f9' },
-  header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderBottomColor: '#ddd' },
-  headerTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 12 },
+  container: { flex: 1, backgroundColor: '#f4f6f8' },
+  header: { flexDirection: 'row', alignItems: 'center', padding: 20,  justifyContent: 'space-between', borderBottomWidth: 1, borderBottomColor: '#ddd' },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', marginLeft: 4  },
 title: { fontSize: 18, fontWeight: 'bold', color: "red", marginLeft: 90 },
 
   messagesContainer: { flex: 1, paddingHorizontal: 16 },
@@ -272,25 +290,28 @@ title: { fontSize: 18, fontWeight: 'bold', color: "red", marginLeft: 90 },
     borderRadius: 12,
   },
 myMessage: {
-  backgroundColor: "#73796e",
+  backgroundColor: "#3b82f6",
   alignSelf: "stretch",
   maxWidth: "100%",    
 },
 otherMessage: {
-  backgroundColor: "#101110",
+  backgroundColor: "#e5e7eb",
   alignSelf: "stretch",
   maxWidth: "100%",
 },
 
-  user: { fontWeight: "bold", marginBottom: 4, color: "#1453b7" },
+  user: { 
+    fontWeight: "bold", 
+    color: "#1453b7", 
+  },
   text: {
-  color: "#dbd0d0",
+  color: "#111827",
   flexShrink: 1,
   flex: 1,    
 },
 time: {
   fontSize: 10,
-  color: "green",
+  color: "#0c49c4",
   marginLeft: 8,
   alignSelf: "flex-end",
 },
@@ -339,6 +360,18 @@ emptySubtitle: {
   color: "#6b7280",
   textAlign: "center",
 },
+backButton: {
+    flexDirection: 'row',
+  alignItems: 'center',
+  },
+topRow: {
+  flexDirection: "row",
+  justifyContent: "space-between",
+  alignItems: "center",
+  marginBottom: 4,
+},
+
 
 
 });
+

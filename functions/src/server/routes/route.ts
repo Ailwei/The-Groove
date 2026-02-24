@@ -15,6 +15,7 @@ import { deleteGrooveController } from "../controllers/grooveController";
 import { getUserGroovesController } from "../controllers/grooveController";
 import { updateSettingsController, getSettingsController } from "../controllers/settings";
 import { updateLocationController } from "../controllers/updateLocation";
+import {deleteMessageController } from "../controllers/deleteMessage";
 import {joinChatGroupController, getChatGroupsController,markChatAsReadController, leaveChatGroupController, fetchMessagesController ,sendMessageController } from "../controllers/chatController";
 const router = Router();
 
@@ -44,4 +45,6 @@ router.post("/chat/leaveChat", authMiddleware, leaveChatGroupController)
 router.get("/chat/fetchChats", authMiddleware,fetchMessagesController)
 router.get("/chat/groups", authMiddleware, getChatGroupsController)
 router.post("/chat/markAsRead", authMiddleware,markChatAsReadController)
+router.post("/chat/deleteMessage", authMiddleware, deleteMessageController)
+
 export default router;

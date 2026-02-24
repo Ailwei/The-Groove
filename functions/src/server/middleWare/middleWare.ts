@@ -18,6 +18,7 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
 
   const token = authHeader.split(" ")[1];
   const JWT_SECRET = getJwtSecret();
+  console.log("JWT_SECRET exists:", !!process.env.JWT_SECRET);
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET) as { userId: string; email: string, username: string };

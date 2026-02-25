@@ -37,7 +37,7 @@ export const scheduledDeleteExpiredGrooves = onSchedule(
   {
     schedule: "every 1 minutes",
     timeZone: "Africa/Johannesburg",
-    region: "us-central1",
+    region: "us-east1",
   },
   async () => {
     console.log("Running groove cleanup...");

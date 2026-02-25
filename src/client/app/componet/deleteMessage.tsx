@@ -71,7 +71,7 @@ export const DeleteMessageButton: React.FC<DeleteMsgProps> = ({
     </View>
   );
 };
-const rightOffset =2;
+const rightOffset = 2;
 const styles = StyleSheet.create({
 
  deleteButton: {

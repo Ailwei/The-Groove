@@ -86,8 +86,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
     if (!message.trim()) {
   Toast.show({
     type: 'error',
-    text1: 'Message required',
-    text2: 'Please enter a message before submitting.',
+    text1: 'Please enter a message before submitting.',
   });
   return;
 }
@@ -157,8 +156,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
       if (data?.error) {
         Toast.show({
           type: "error",
-          text1: "Error",
-          text2: data.error,
+          text1: data.error,
         });
         return;
       }
@@ -167,8 +165,7 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
       console.error(err);
       Toast.show({
         type: "error",
-        text1: "Failed to tag groove",
-        text2: "Something went wrong.",
+        text1: "Something went wrong.",
       });
     }
   };

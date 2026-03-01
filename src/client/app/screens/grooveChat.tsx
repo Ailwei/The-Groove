@@ -157,8 +157,7 @@ export const ChatRoom: React.FC<ChatRoomProps> = ({
   } catch (error: any) {
     Toast.show({
       type: "error",
-      text1: "Failed to leave group",
-      text2: error.response?.data?.error || "Something went wrong",
+      text1: error.response?.data?.error || "Something went wrong",
     });
   }
 };

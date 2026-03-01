@@ -12,38 +12,60 @@ import ReportModal from '../componet/reportModal';
 interface GrooveDetailsPopupProps {
   groove: GrooveTag;
   userLocation: { lat: number; lng: number } | null;
+  grooveLocation: {lat: number, lng: number} | null;
   onClose: () => void;
   onSupport?: (id: string) => void;
   onJoinChat?: (groove: GrooveTag) => void;
 }
 
-export function GrooveDetailsPopup({ groove, onClose, userLocation,   onJoinChat, }: GrooveDetailsPopupProps) {
+export function GrooveDetailsPopup({ groove, onClose, userLocation, grooveLocation,  onJoinChat, }: GrooveDetailsPopupProps) {
   const [reportModalVisible, setReportModalVisible] = useState(false);
   const [currentUser, setCurrentUser] = useState<{ userId: string } | null>(null);
-  const [supported, setSupported] = useState(false);
   const [loadingSupport, setLoadingSupport] = useState(false);
-const [joining, setJoining] = useState(false);
+  const [joining, setJoining] = useState(false);
+  const [joined, setJoined] = useState<boolean | null>(null);
+  const [supported, setSupported] = useState<boolean | null>(null);
 
 const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-  useEffect(() => {
-    const loadUser = async () => {
+ useEffect(() => {
+  const loadUser = async () => {
+    try {
       const token = await AsyncStorage.getItem("token");
       if (!token) return;
 
-      try {
+      const decoded: any = jwtDecode(token);
+      setCurrentUser({ userId: decoded.userId });
 
-        const decoded: any = jwtDecode(token);
-        setCurrentUser({ userId: decoded.userId });
-        if (groove.supporters?.some((s: any) => s.userId === decoded.userId)) {
-          setSupported(true);
-        }
-      } catch (e) {
-        console.log("Failed to decode token", e);
-      }
-    };
+      const headers = { Authorization: `Bearer ${token}` };
 
-    loadUser();
-  }, []);
+      // 🚀 Run both requests in parallel
+      const [supportRes, chatRes] = await Promise.all([
+        axios.post(
+          `${BASE_URL}/api/groove/supportStatus`,
+          { grooveId: groove.id },
+          { headers }
+        ),
+        axios.get(
+          `${BASE_URL}/api/chat/groups`,
+          { headers }
+        )
+      ]);
+
+      setSupported(supportRes.data.supported);
+
+      const joinedAlready = chatRes.data.chats.some(
+        (c: any) => c.grooveId === groove.id
+      );
+
+      setJoined(joinedAlready);
+
+    } catch (e: any) {
+      console.log("Failed to load statuses", e);
+    }
+  };
+
+  loadUser();
+}, [groove.id]);
 const getVibeColor = (vibe: GrooveTag['vibe']) => {
 
     switch (vibe) {
@@ -104,8 +126,7 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
     );
   };
  const handleJoinChat = async () => {
-  if (!currentUser?.userId || !groove?.id || !groove.chatId) return;
-
+  if (!currentUser?.userId || !groove?.id || !groove.chatId || !grooveLocation) return;
   setJoining(true);
 
   try {
@@ -114,17 +135,18 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
 
     const res = await axios.post(
       `${BASE_URL}/api/chat/joinChat`,
-      { grooveId: groove.id, chatId: groove.chatId },
+      { grooveId: groove.id, chatId: groove.chatId, lat: grooveLocation!.lat,lng: grooveLocation!.lng},
       { headers: { Authorization: `Bearer ${token}` } }
     );
 
     if (res.data.alreadyJoined) {
       Toast.show({
         type: "success",
-        text1: "Welcome back 👋",
+        text1: "Welcome back",
       });
     }
     onJoinChat?.(groove);
+    setJoined(true)
 
   } catch (err: any) {
     Toast.show({
@@ -138,56 +160,38 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
 };
 
   const handleSupport = async () => {
-
   if (!userLocation) {
-    Toast.show({
-      type: 'error',
-      text1: 'Location required',
-      text2: 'Cannot support groove without your current location',
-    });
+    Toast.show({ type: 'error', text1: 'Location required', text2: 'Cannot support groove without your location' });
     return;
   }
-  if (supported || loadingSupport) {
-      Toast.show({ type: 'info', text1: 'Already supported' });
-      return;
-    }
-    setSupported(true);
-    setLoadingSupport(true);
+  if (loadingSupport) return;
+
+  setLoadingSupport(true);
 
   try {
-     const token = await AsyncStorage.getItem('token');
-     if (!token) return;
+    const token = await AsyncStorage.getItem('token');
+    if (!token) return;
 
-    const res = await axios.post(
-      `${BASE_URL}/api/groove/support`,
-      {
-        grooveId: groove.id,
-        userLat: userLocation.lat,
-        userLng: userLocation.lng,
-      },
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
+    const res = await axios.post(`${BASE_URL}/api/groove/support`, {
+      grooveId: groove.id,
+      userLat: userLocation.lat,
+      userLng: userLocation.lng,
+    }, { headers: { Authorization: `Bearer ${token}` } });
 
     const { action, message, totalSupports } = res.data;
 
-    setTimeout(() => {
-      Toast.show({
-        type: action === "SUPPORTED_NEW" ? "success" : "info",
-        text1: message || (action === "SUPPORTED_NEW" ? "Groove supported!" : "You already support this groove"),
-        text2: totalSupports ? `Total supports: ${totalSupports}` : undefined,
-      });
-    }, 0);
+    setSupported(action === "SUPPORTED_NEW");
+
+    Toast.show({
+      type: action === "SUPPORTED_NEW" ? "success" : "info",
+      text1: message || (action === "SUPPORTED_NEW" ? "Groove supported!" : "Already supported"),
+      text2: totalSupports ? `Total supports: ${totalSupports}` : undefined,
+    });
 
   } catch (err: any) {
-    setSupported(false);
-    const errorMessage = err.response?.data?.error || err.message || 'Something went wrong';
-    setTimeout(() => {
-      Toast.show({
-        type: 'error',
-        text1: 'Support failed',
-        text2: errorMessage,
-      });
-    }, 0);
+    Toast.show({ type: 'error',  text1: err.response?.data?.error || err.message || 'Something went wrong' });
+  } finally {
+    setLoadingSupport(false);
   }
 };
 
@@ -212,7 +216,7 @@ const getVibeColor = (vibe: GrooveTag['vibe']) => {
       { grooveId: groove.id, reason },
       { headers: { Authorization: `Bearer ${token}` } }
     );
-console.log("handleJoinChat clicked", groove?.id, currentUser?.userId);
+
 
     Toast.show({
       type: 'success',
@@ -222,13 +226,14 @@ console.log("handleJoinChat clicked", groove?.id, currentUser?.userId);
     const message = err.response?.data?.error || err.message || 'Something went wrong';
     Toast.show({
       type: 'error',
-      text1: 'Failed to submit report',
-      text2: message,
+      text1: message,
     });
   } finally {
     setReportModalVisible(false);
   }
 };
+const isJoinLoading = joined === null;
+const isSupportLoading = supported === null;
 
 
   const insets = useSafeAreaInsets();
@@ -265,27 +270,52 @@ console.log("handleJoinChat clicked", groove?.id, currentUser?.userId);
             </View>
           </View>
 
-          <TouchableOpacity style={styles.navigateButton} onPress={handleNavigate}>
-            <Navigation width={20} height={20} color="#fff" style={{ marginRight: 8 }} />
-            <Text style={styles.navigateText}>Navigate</Text>
-
-          </TouchableOpacity>
+          <TouchableOpacity
+  style={[
+    styles.navigateButton,
+    { backgroundColor: "#8b5cf6" }
+  ]}
+  onPress={handleNavigate}
+>
+  <Navigation width={20} height={20} color="#fff" style={{ marginRight: 8 }} />
+  <Text style={styles.navigateText}>Navigate</Text>
+</TouchableOpacity>
         </View>
         {currentUser && currentUser.userId && groove && groove.userId && currentUser.userId !== groove.userId && (
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 16 }}>
+           <TouchableOpacity
+  style={[
+    styles.navigateButton,
+    {
+      flex: 1,
+      marginRight: 8,
+      backgroundColor: joined
+        ? "#9ca3af"     
+        : "#5cf69aff",
+    },
+  ]}
+  onPress={handleJoinChat}
+  disabled={joined || joining || isJoinLoading}
+>
+  <Text style={styles.navigateText}>
+    {joined
+      ? "Joined"
+      : isJoinLoading
+      ? "Loading..."
+      : joining
+      ? "Joining..."
+      : "Join Chat"}
+  </Text>
+</TouchableOpacity>
             <TouchableOpacity
-            style={[styles.navigateButton, { backgroundColor: '#5cf69aff', flex: 1, marginRight: 8 }]}
-            onPress={handleJoinChat}
-            disabled={joining}
-            >
-             <Text>Join Chat</Text> 
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.navigateButton, { backgroundColor: '#f65cacff', flex: 1, marginRight: 8 }]}
+              style={[styles.navigateButton, { 
+                 backgroundColor: supported || loadingSupport ? '#9ca3af' : '#f65cacff' 
+
+              }]}
               onPress={handleSupport}
-              disabled={supported || loadingSupport}
+              disabled={isSupportLoading || supported || loadingSupport}
             >
-              <Text style={styles.navigateText}> Support</Text>
+              <Text style={styles.navigateText}> {isSupportLoading ? "Loading..." : supported ? 'Supported' : 'Support'}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -356,7 +386,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#8b5cf6',
     padding: 16,
     borderRadius: 12,
     marginTop: 16,

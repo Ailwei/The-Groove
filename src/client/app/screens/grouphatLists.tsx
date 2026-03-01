@@ -12,7 +12,6 @@ import { ArrowLeft } from "lucide-react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import Toast from "react-native-toast-message";
-import { white } from "react-native-paper/lib/typescript/styles/themes/v2/colors";
 
 interface ChatGroup {
   grooveId: string;
@@ -54,8 +53,7 @@ const GroupChatList = ({ onBack, onOpenChat }: GroupChatListProps) => {
     } catch (err: any) {
       Toast.show({
         type: "error",
-        text1: "Failed to load chat groups",
-        text2: err.response?.data?.error || err.message,
+        text1: err.response?.data?.error || err.message,
       });
     } finally {
       setLoading(false);
@@ -87,7 +85,6 @@ const GroupChatList = ({ onBack, onOpenChat }: GroupChatListProps) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={onBack} style={styles.backButton}>
           <ArrowLeft width={24} height={24} />
@@ -95,7 +92,6 @@ const GroupChatList = ({ onBack, onOpenChat }: GroupChatListProps) => {
         <Text style={styles.headerTitle}>Chat Groups</Text>
       </View>
 
-      {/* List */}
       <ScrollView
         style={styles.list}
         contentContainerStyle={{ paddingVertical: 16 }}

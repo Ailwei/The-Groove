@@ -1,6 +1,6 @@
 import messaging from '@react-native-firebase/messaging';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { Alert, Platform } from 'react-native';
+import { Alert} from 'react-native';
 
 export const registerForPushNotificationsAsync = async () => {
   try {
@@ -15,8 +15,6 @@ export const registerForPushNotificationsAsync = async () => {
     }
 
     const token = await messaging().getToken();
-    console.log("device token", token)
-    console.log('FCM device token:', token);
     await AsyncStorage.setItem('deviceToken', token);
 
     return token;

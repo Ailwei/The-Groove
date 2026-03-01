@@ -77,7 +77,11 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
             await Notifications.scheduleNotificationAsync({
               content: { title, body, data: remoteMessage.data, sound: 'default' },
-              trigger: null,
+              trigger: {
+                type: 'timeInterval',
+                seconds: 3,
+                repeats: false
+              } as any,
             });
           }
         );

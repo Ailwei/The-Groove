@@ -5,7 +5,6 @@ import { Dimensions, StyleSheet, Text, TouchableOpacity, View } from 'react-nati
 import MapView, { Marker } from 'react-native-maps';
 import { Menu as PaperMenu, Provider } from 'react-native-paper';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import Toast from 'react-native-toast-message';
 import { GrooveTag } from '..';
 import { GrooveDetailsPopup } from './GrooveDetailsPopup';
 import { useLocation } from '../contecxt/LocationContext';
@@ -225,6 +224,8 @@ style={[styles.legend, { top: insets.top + headerHeight + 12}]}
                 onClose={() => onSelectGroove(null)}
                  onJoinChat={onJoinChat} 
                 userLocation={userLocation}
+                grooveLocation={{ lat: selectedGroove.coordinates.lat, lng: selectedGroove.coordinates.lng }} // <- set this
+
                onSupport={() => {
   if (selectedGroove) {
     onSelectGroove({
@@ -237,7 +238,7 @@ style={[styles.legend, { top: insets.top + headerHeight + 12}]}
               />
             )}
 
-            <Toast />
+          
           </>
         )}
       </SafeAreaView>

@@ -77,7 +77,6 @@ export default function App() {
 
  useEffect(() => {
   if (chatGroove) {
-    console.log(chatGroove)
     setCurrentScreen('chatRoom');
   }
 }, [chatGroove]);

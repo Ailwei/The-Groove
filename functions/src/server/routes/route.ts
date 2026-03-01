@@ -16,6 +16,8 @@ import { getUserGroovesController } from "../controllers/grooveController";
 import { updateSettingsController, getSettingsController } from "../controllers/settings";
 import { updateLocationController } from "../controllers/updateLocation";
 import {deleteMessageController } from "../controllers/deleteMessage";
+import { getGrooveSupportStatusController } from "../controllers/grooveController";
+
 import {joinChatGroupController, getChatGroupsController,markChatAsReadController, leaveChatGroupController, fetchMessagesController ,sendMessageController } from "../controllers/chatController";
 const router = Router();
 
@@ -30,7 +32,7 @@ router.post("/users/login", loginController)
 router.post("/user/resetPassword", resetPasswordWithOtp )
 router.post("/user/forgotPassword", requestPasswordResetController)
 router.delete("/grooves/delete", authMiddleware, deleteGrooveController);
-
+router.get("/groove/supportStatus", authMiddleware, getGrooveSupportStatusController);
 router.post("/users/create", createUserController);
 router.get("/users/:id",authMiddleware, getUserController);
 router.delete("/user/deleteAccount/:id",authMiddleware, deleteAccount);
@@ -38,6 +40,7 @@ router.get("/user/profile",authMiddleware, getProfileController)
 router.post("/groove/report",authMiddleware, reportController);
 router.patch("/user/updateDeviceToken/:userId",authMiddleware, saveTokenController)
 router.post("/groove/support", authMiddleware, supportGrooveController)
+router.post("/groove/supportStatus", authMiddleware, getGrooveSupportStatusController);
 
 router.post("/chat/joinChat", authMiddleware, joinChatGroupController)
 router.post("/chat/sendMessage", authMiddleware, sendMessageController)

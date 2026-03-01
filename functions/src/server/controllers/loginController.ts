@@ -14,7 +14,7 @@ export const loginController = async (req: Request, res: Response) => {
   }
 
   try {
-    const userSnapshot = await db.collection("users").where("email", "==", email).get();
+    const userSnapshot = await db.collection("users").where("email", "==", email.toLowerCase()).get();
 
     if (userSnapshot.empty) {
       return res.status(404).json({ error: "User not found" });
@@ -29,7 +29,7 @@ export const loginController = async (req: Request, res: Response) => {
     }
     const JWT_SECRET = getJwtSecret();
 const token = jwt.sign(
-  { userId: userDoc.id, email: userData.email, username: userData.username },
+  { userId: userDoc.id, email: userData.email.toLowerCase, username: userData.username },
   JWT_SECRET,
   { expiresIn: "7d" }
 );
@@ -40,7 +40,7 @@ const token = jwt.sign(
       user: {
         id: userDoc.id,
         username: userData.username,
-        email: userData.email,
+        email: userData.email.toLowerCase(),
         deviceToken: userData.deviceToken || null
       }
     });

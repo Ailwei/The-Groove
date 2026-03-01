@@ -18,7 +18,7 @@ export const createUserController = async (req: Request, res: Response) => {
     }
 
     const usersSnapshot = await db.collection("users")
-      .where("email", "==", email)
+      .where("email", "==", email.toLowerCase())
       .get();
     if (!usersSnapshot.empty) {
       return res.status(400).json({ error: "Email already in use" });
@@ -35,7 +35,7 @@ export const createUserController = async (req: Request, res: Response) => {
 
     const docRef = await db.collection("users").add({
       username,
-      email,
+      email : email.toLowerCase(),
       password: hashedPassword,
       createdAt: Date.now(),
       settings: {

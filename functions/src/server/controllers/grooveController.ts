@@ -6,6 +6,7 @@ import { sendNearbyNotifications, sendSupportedGroovesNotifications, notifyOwner
 import axios from "axios";
 import { AuthRequest } from "../middleWare/middleWare";
 import { createGrooveChatGroup } from "../utils/createGroup";
+import { error } from "console";
 
 const RADIUS_METERS = 20;
 const IMPORTANT_SUPPORT_THRESHOLD = 3;
@@ -132,7 +133,7 @@ export const tagGrooveController = async (req: AuthRequest, res: Response) => {
 
   return res.status(200).json({
     action: "SUPPORTED_VIA_TAG",
-    message: "Groove already exists — support added",
+    message: "Groove already exists — support will be added",
     grooveId: existingGroove.id,
     totalSupports,
     isImportant,
@@ -245,7 +246,6 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
       (s: any) => s.userId === userId
     );
 
-    // ✅ IMPORTANT CHANGE
     if (alreadySupported) {
       return res.status(200).json({
         action: "SUPPORTED_EXISTING",
@@ -256,7 +256,7 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
       });
     }
 
-    // New support
+  
     const totalSupports = await addSupporter(grooveRef, userId, username);
     const isImportant = await updateGrooveImportance(grooveRef);
 
@@ -280,7 +280,27 @@ export const supportGrooveController = async (req: AuthRequest, res: Response) =
     return res.status(500).json({ error: "Internal server error" });
   }
 };
+export const getGrooveSupportStatusController = async (req: AuthRequest, res: Response) => {
+  const { grooveId } = req.body;
+  const userId = req.user?.userId;
 
+  if (!grooveId || !userId) {
+    return res.status(400).json({ error: "Groove ID and user required" });
+  }
+
+  try {
+    const grooveRef = db.collection("grooves").doc(grooveId);
+    const grooveDoc = await grooveRef.get();
+    if (!grooveDoc.exists) return res.status(404).json({ error: "Groove not found" });
+
+    const grooveData = grooveDoc.data();
+    const supported = grooveData?.supporters?.some((s: any) => s.userId === userId) || false;
+
+    return res.json({ supported });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
+};
 export const getUserGroovesController = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.userId;

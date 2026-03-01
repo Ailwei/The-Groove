@@ -3,41 +3,75 @@ import { db } from "../firebase/firestore";
 import { AuthRequest } from "../middleWare/middleWare";
 import { FieldValue } from "firebase-admin/firestore";
 import admin from "firebase-admin";
+import { getDistanceFromLatLonInM } from "../shared/geo";
 
+
+const RADIUS_METERS = 5000;
 
 export const joinChatGroupController = async (
   req: AuthRequest,
   res: Response
 ) => {
   try {
-    const { grooveId, chatId } = req.body;
+    const { grooveId, chatId, lat, lng } = req.body;
     const userId = req.user?.userId;
-
-    console.log("grooveid", grooveId, "chatid", chatId)
-
-    if (!grooveId || !chatId || !userId) {
-      return res.status(400).json({ error: "grooveId and chatId are required" });
-    }
+    if (
+  !grooveId ||
+  !chatId ||
+  !userId ||
+  lat == null ||
+  lng == null
+) {
+  return res.status(400).json({
+    error: "grooveId, chatId, lat and lng are required",
+  });
+}
 
     const grooveRef = db.collection("grooves").doc(grooveId);
     const grooveSnap = await grooveRef.get();
     if (!grooveSnap.exists) return res.status(404).json({ error: "Groove not found" });
 
+    const grooveData = grooveSnap.data();
+    const grooveCoords = grooveData?.coordinates;
 
-    const chatRef = grooveRef.collection("chats").doc(chatId); 
+    if (
+  grooveCoords?.lat == null ||
+  grooveCoords?.lng == null
+) {
+  return res.status(400).json({ error: "Groove location not configured" });
+}
+
+    const distance = getDistanceFromLatLonInM(
+      lat,
+      lng,
+      grooveCoords.lat,
+      grooveCoords.lng
+    );
+
+    if (distance > RADIUS_METERS) {
+      return res.status(403).json({
+        error: "You are too far away to join this chat group",
+      });
+    }
+    const chatRef = grooveRef.collection("chats").doc(chatId);
     const chatSnap = await chatRef.get();
     if (!chatSnap.exists) return res.status(404).json({ error: "Chat group not found" });
 
-    const chatData = chatSnap.data();
-    if (chatData?.members?.includes(userId)) {
-      return res.status(200).json({ sucess: "Welcome Back!!" });
-    }
+    if (chatId?.members?.includes(userId)) {
+  return res.status(200).json({
+    alreadyJoined: true,
+    message: "Welcome back!",
+  });
+}
 
     await chatRef.update({
       members: FieldValue.arrayUnion(userId),
     });
-
-    return res.status(201).json({ message: "Joined chat group successfully" });
+    return res.status(201).json({
+      alreadyJoined: false,
+      message: "Joined chat group successfully"
+      , distance,
+    });
 
   } catch (error) {
     console.error("Join chat group error:", error);
@@ -61,7 +95,7 @@ export const sendMessageController = async (
     const grooveSnap = await grooveRef.get();
     if (!grooveSnap.exists) return res.status(404).json({ error: "Groove not found" });
 
-  
+
     const chatRef = grooveRef.collection("chats").doc(chatId);
     const chatSnap = await chatRef.get();
     if (!chatSnap.exists) return res.status(404).json({ error: "Chat group not found" });
@@ -71,7 +105,7 @@ export const sendMessageController = async (
       return res.status(403).json({ error: "User is not a member of this chat" });
     }
 
-    const messageRef = chatRef.collection("messages").doc(); 
+    const messageRef = chatRef.collection("messages").doc();
     await messageRef.set({
       senderId: userId,
       text: text.trim(),
@@ -132,12 +166,12 @@ export const fetchMessagesController = async (
 
     const messagesSnap = await messagesQuery.get();
     console.log(`Fetched ${messagesSnap.size} messages from chat: ${chatId}`);
-if (messagesSnap.empty) {
-  return res.status(200).json({
-    messages: [],
-    noMessages: true,
-  });
-}
+    if (messagesSnap.empty) {
+      return res.status(200).json({
+        messages: [],
+        noMessages: true,
+      });
+    }
     const senderIds = Array.from(new Set(messagesSnap.docs.map(doc => doc.data().senderId)));
     const usersSnap = await db.getAll(...senderIds.map(id => db.collection("users").doc(id)));
     const usersMap: Record<string, string> = {};
@@ -159,7 +193,7 @@ if (messagesSnap.empty) {
     });
 
     return res.status(200).json({ messages });
-    
+
 
   } catch (error: any) {
     console.error("Fetch messages error:", error.message, error.stack);

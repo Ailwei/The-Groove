@@ -23,14 +23,13 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
   const [vibe, setVibe] = useState<GrooveTag['vibe']>('busy');
   const [message, setMessage] = useState('');
   const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date());
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [endTime, setEndTime] = useState<Date | null>(null);
+  const [showEndTimePicker, setShowEndTimePicker] = useState(false);
+  const [showEndDatePicker, setShowEndDatePicker] = useState(false);
   const insets = useSafeAreaInsets();
 
 
   const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
-
   const vibeOptions: { value: GrooveTag['vibe']; label: string; color: string; emoji: string }[] = [
     { value: 'very-busy', label: 'Very Busy', color: '#ef4444', emoji: '🔥' },
     { value: 'busy', label: 'Busy', color: '#f97316', emoji: '🟠' },
@@ -94,17 +93,32 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
     const now = new Date();
 
     const fixedStart = new Date(startTime);
-    const fixedEnd = new Date(endTime);
 
-    if (fixedEnd.getTime() <= fixedStart.getTime()) {
-      fixedEnd.setDate(fixedEnd.getDate() + 1);
-    }
+if (!endTime) {
+  Toast.show({
+    type: "error",
+    text1: "Please pick an end date & time",
+  });
+  return;
+}
 
-    if (fixedEnd.getTime() <= now.getTime()) {
-      Toast.show({ type: "error", text1: "End time must be in the future" });
-      return;
-    }
+const fixedEnd = new Date(endTime);
 
+if (fixedEnd.getTime() <= fixedStart.getTime()) {
+  Toast.show({
+    type: "error",
+    text1: "End time must be after the start time",
+  });
+  return;
+}
+
+if (fixedEnd.getTime() > fixedStart.getTime() + 24 * 60 * 60 * 1000) {
+  Toast.show({
+    type: "error",
+    text1: "Groove cannot last more than 24 hours",
+  });
+  return;
+}
     if (!coords) {
       Toast.show({
         type: "error",
@@ -252,38 +266,65 @@ export function TagGrooveScreen({ onBack, onSubmit }: TagGrooveScreenProps) {
 </View>
 
         <View style={styles.field}>
-          {showStartPicker && (
-            <DateTimePicker
-              value={startTime}
-              mode="time"
-              onChange={(event, selected) => {
-                setShowStartPicker(false);
-                if (selected) setStartTime(selected);
-              }}
-            />
-          )}
-          {showEndPicker && (
-            <DateTimePicker
-              value={endTime}
-              mode="time"
-              minimumDate={new Date()}
-              onChange={(event, selected) => {
-                setShowEndPicker(false);
-                if (selected) setEndTime(selected);
-              }}
-            />
-          )}
+  
+ {showEndDatePicker && (
+  <DateTimePicker
+    value={endTime || new Date()}
+    mode="date"
+    minimumDate={new Date()}
+    maximumDate={new Date(startTime.getTime() + 24 * 60 * 60 * 1000)}
+    onChange={(event, selected) => {
+      setShowEndDatePicker(false);
 
-          <Text style={styles.label}>Start Time</Text>
-          <TouchableOpacity onPress={() => setShowStartPicker(true)} style={styles.timeButton}>
-            <Text>{startTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-          </TouchableOpacity>
+      if (event.type === "dismissed") {
+        return;
+      }
 
-          <Text style={styles.label}>End Time</Text>
-          <TouchableOpacity onPress={() => setShowEndPicker(true)} style={styles.timeButton}>
-            <Text>{endTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</Text>
-          </TouchableOpacity>
-        </View>
+      if (selected) {
+        setEndTime(selected);
+        setShowEndTimePicker(true);
+      }
+    }}
+  />
+)}
+  {showEndTimePicker && (
+  <DateTimePicker
+    value={endTime || new Date()}
+    mode="time"
+    onChange={(event, selected) => {
+      setShowEndTimePicker(false);
+
+      if (event.type === "dismissed") {
+        return;
+      }
+
+      if (selected && endTime) {
+        const updated = new Date(endTime);
+        updated.setHours(selected.getHours());
+        updated.setMinutes(selected.getMinutes());
+        setEndTime(updated);
+      }
+    }}
+  />
+)}
+
+  <Text style={styles.label}>Start Time</Text>
+  <View style={styles.timeButton}>
+    <Text>
+      {startTime.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })}
+    </Text>
+  </View>
+
+  <Text style={styles.label}>End Time</Text>
+  <TouchableOpacity onPress={() => setShowEndDatePicker(true)} style={styles.timeButton}>
+    <Text>
+      {endTime
+        ? endTime.toLocaleString([], { dateStyle: 'short', timeStyle: 'short' })
+        : 'Pick end date & time'}
+    </Text>
+  </TouchableOpacity>
+
+</View>
       </ScrollView>
 
       <TouchableOpacity

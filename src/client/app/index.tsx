@@ -13,12 +13,14 @@ import ResetPasswordScreen from './screens/ResetPasswordScreen';
 import GroupChatList from './screens/grouphatLists';
 import { SettingsScreen } from './screens/SettingsScreen';
 import { SignupScreen } from './screens/SignUp';
-import { SplashScreen } from './screens/SplashScreen';
+import { SplashScreen as CustomSplashScreen } from './screens/SplashScreen';
 import { TagGrooveScreen } from './screens/TagGrooveScreen';
 import * as Notifications from 'expo-notifications';
 import FetchGrooves from './componet/fetchGrooves';
 import Toast from 'react-native-toast-message';
 import { ChatRoom } from './screens/grooveChat';
+import * as SplashScreen from 'expo-splash-screen';
+
 
 
 Notifications.setNotificationHandler({
@@ -73,7 +75,16 @@ export default function App() {
   const [userId, setUserId] = useState<string | null>(null);
   const [resetEmail, setResetEmail] = useState<string | null>(null);
   const [chatGroove, setChatGroove] = useState<GrooveTag | null>(null);
-  const [totalUnread, setTotalUnread] = useState(0);
+  const [appReady, setAppReady] = useState(false);
+
+  useEffect(() => {
+  const tryHideSplash = async () => {
+    if (appReady && !loading && currentScreen === 'splash') {
+      await SplashScreen.hideAsync();
+    }
+  };
+  tryHideSplash();
+}, [appReady, loading, currentScreen]);
 
  useEffect(() => {
   if (chatGroove) {
@@ -99,10 +110,8 @@ export default function App() {
   }, []);
 
   const handleSplashComplete = () => {
-    if (loading) return;
-    setCurrentScreen(!userId ? 'signup' : 'login');
-  };
-
+  setCurrentScreen(!userId ? 'signup' : 'login');
+};
   const handleSignupSuccess = async (id: string) => {
     await AsyncStorage.setItem('userId', id);
     setUserId(id);
@@ -127,16 +136,12 @@ export default function App() {
     setCurrentScreen('home');
   };
 
-useEffect(() => {
-}, [currentScreen]);
-  if (loading) return <ActivityIndicator size="large" style={{ flex: 1 }} />;
-
   return (
     <SettingsProvider>
       <LocationProvider>
         <NotificationRegistrar />
         <View style={styles.container}>
-          {currentScreen === 'splash' && <SplashScreen onComplete={handleSplashComplete} />}
+          {currentScreen === 'splash' && <CustomSplashScreen onComplete={handleSplashComplete} />}
 
           {currentScreen === 'signup' && (
             <SignupScreen

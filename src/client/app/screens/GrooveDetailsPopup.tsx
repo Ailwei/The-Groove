@@ -38,7 +38,6 @@ const BASE_URL = process.env.EXPO_PUBLIC_API_URL;
 
       const headers = { Authorization: `Bearer ${token}` };
 
-      // 🚀 Run both requests in parallel
       const [supportRes, chatRes] = await Promise.all([
         axios.post(
           `${BASE_URL}/api/groove/supportStatus`,

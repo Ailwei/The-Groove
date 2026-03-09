@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "TheGroove",
+    "icon": "./assets/icon.png", 
     "slug": "thegroove",
     "scheme": "thegroove",
     "android": {

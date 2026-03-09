@@ -2,7 +2,6 @@ import 'dotenv/config';
 import path from 'path';
 import { config } from 'dotenv';
 
-// Load .env file at the root of your project
 config({ path: path.resolve(__dirname, '.env') });
 
 export default {
@@ -10,6 +9,7 @@ export default {
     name: "TheGroove",
     slug: "TheGroove",
     version: "1.0.0",
+    icon: "./assets/icon.png", 
     orientation: "portrait",
     scheme: "thegroove",
     jsEngine: "hermes",
@@ -46,11 +46,11 @@ export default {
       [
         "expo-splash-screen",
         {
-          image: "./assets/splashscreen_logo.png",
-          imageWidth: 200,
-          resizeMode: "contain",
-          backgroundColor: "#ffffff",
-          dark: { backgroundColor: "#000000" },
+          // image: "./assets/splashscreen_logo.png",
+          // imageWidth: 200,
+          // resizeMode: "contain",
+          // backgroundColor: "#ffffff",
+          // dark: { backgroundColor: "#000000" },
         },
       ],
     ],

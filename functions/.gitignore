@@ -5,6 +5,10 @@ lib/**/*.js.map
 # TypeScript v1 declaration files
 typings/
 
+.env.the-groove-20ca3
+
 # Node.js dependency directory
 node_modules/
 *.local
+
+.serviceAccountKey.json
